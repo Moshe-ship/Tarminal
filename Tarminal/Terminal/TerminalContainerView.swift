@@ -40,15 +40,16 @@ struct TerminalContainerView: NSViewRepresentable {
 
         container.addSubview(terminalView)
 
-        // --- BiDi overlay ---
-        let overlay = BiDiOverlayView(frame: container.bounds)
-        overlay.autoresizingMask = [.width, .height]
-        overlay.terminalView = terminalView
-        container.addSubview(overlay)
+        // --- BiDi overlay (disabled until alignment is pixel-perfect) ---
+        // SwiftTerm already renders Arabic with connected letters via Core Text.
+        // The overlay adds duplicate text until row alignment is fixed.
+        // let overlay = BiDiOverlayView(frame: container.bounds)
+        // overlay.autoresizingMask = [.width, .height]
+        // overlay.terminalView = terminalView
+        // container.addSubview(overlay)
 
         // Store references
         context.coordinator.terminalView = terminalView
-        context.coordinator.overlayView = overlay
 
         // Start shell
         DispatchQueue.main.async {
