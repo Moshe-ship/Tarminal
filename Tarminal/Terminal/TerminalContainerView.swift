@@ -4,42 +4,52 @@ import SwiftTerm
 struct TerminalContainerView: NSViewRepresentable {
     let tab: TerminalTab
 
-    func makeNSView(context: Context) -> LocalProcessTerminalView {
-        let terminalView = LocalProcessTerminalView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
+    func makeNSView(context: Context) -> NSView {
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
+        container.autoresizesSubviews = true
+
+        // Create terminal view
+        let terminalView = LocalProcessTerminalView(frame: container.bounds)
+        terminalView.autoresizingMask = [.width, .height]
 
         // Configure appearance
         terminalView.nativeBackgroundColor = .black
         terminalView.nativeForegroundColor = .init(white: 0.92, alpha: 1)
-
-        // Set font
-        let fontSize: CGFloat = 14
-        terminalView.font = NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
+        terminalView.font = NSFont.monospacedSystemFont(ofSize: 14, weight: .regular)
 
         // Set process delegate
         terminalView.processDelegate = context.coordinator
 
-        // Start shell process after a brief delay to ensure view is in window
+        // Add terminal to container
+        container.addSubview(terminalView)
+
+        // Create BiDi overlay (sits on top, redraws RTL lines)
+        let overlay = BiDiOverlayView(frame: container.bounds)
+        overlay.autoresizingMask = [.width, .height]
+        overlay.terminalView = terminalView
+        container.addSubview(overlay)
+
+        // Store references
+        context.coordinator.terminalView = terminalView
+        context.coordinator.overlayView = overlay
+
+        // Start shell process
         DispatchQueue.main.async {
             let shell = ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
-            let home = NSHomeDirectory()
-
             terminalView.startProcess(
                 executable: shell,
                 args: ["--login"],
                 environment: nil,
                 execName: nil
             )
-
-            // Make the terminal the first responder for keyboard input
             terminalView.window?.makeFirstResponder(terminalView)
         }
 
-        return terminalView
+        return container
     }
 
-    func updateNSView(_ nsView: LocalProcessTerminalView, context: Context) {
-        // Ensure terminal has focus
-        nsView.window?.makeFirstResponder(nsView)
+    func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.terminalView?.window?.makeFirstResponder(context.coordinator.terminalView)
     }
 
     func makeCoordinator() -> Coordinator {
@@ -48,9 +58,23 @@ struct TerminalContainerView: NSViewRepresentable {
 
     class Coordinator: NSObject, LocalProcessTerminalViewDelegate {
         let tab: TerminalTab
+        var terminalView: LocalProcessTerminalView?
+        var overlayView: BiDiOverlayView?
+
+        // Timer for refreshing BiDi overlay
+        private var refreshTimer: Timer?
 
         init(tab: TerminalTab) {
             self.tab = tab
+            super.init()
+            // Refresh overlay periodically to catch terminal updates
+            refreshTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+                self?.overlayView?.needsDisplay = true
+            }
+        }
+
+        deinit {
+            refreshTimer?.invalidate()
         }
 
         func sizeChanged(source: LocalProcessTerminalView, newCols: Int, newRows: Int) {}
@@ -61,8 +85,18 @@ struct TerminalContainerView: NSViewRepresentable {
             }
         }
 
-        func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {}
+        func hostCurrentDirectoryUpdate(source: TerminalView, directory: String?) {
+            if let dir = directory {
+                DispatchQueue.main.async {
+                    self.tab.workingDirectory = dir
+                }
+            }
+        }
 
-        func processTerminated(source: TerminalView, exitCode: Int32?) {}
+        func processTerminated(source: TerminalView, exitCode: Int32?) {
+            DispatchQueue.main.async {
+                self.tab.isTerminated = true
+            }
+        }
     }
 }
