@@ -51,11 +51,27 @@ struct TerminalContainerView: NSViewRepresentable {
         // Store references
         context.coordinator.terminalView = terminalView
 
-        // Start shell
+        // Start shell (validated)
         DispatchQueue.main.async {
-            let shell = UserDefaults.standard.string(forKey: "shellPath")
+            let allowedShells = ["/bin/zsh", "/bin/bash", "/bin/sh",
+                                 "/usr/local/bin/zsh", "/usr/local/bin/bash",
+                                 "/usr/local/bin/fish", "/opt/homebrew/bin/zsh",
+                                 "/opt/homebrew/bin/bash", "/opt/homebrew/bin/fish"]
+
+            let requested = UserDefaults.standard.string(forKey: "shellPath")
                 ?? ProcessInfo.processInfo.environment["SHELL"]
                 ?? "/bin/zsh"
+
+            // Validate: must be absolute path, must exist, must be executable
+            let shell: String
+            if requested.hasPrefix("/"),
+               FileManager.default.isExecutableFile(atPath: requested),
+               allowedShells.contains(requested) || FileManager.default.fileExists(atPath: requested) {
+                shell = requested
+            } else {
+                shell = "/bin/zsh" // Safe fallback
+            }
+
             terminalView.startProcess(
                 executable: shell,
                 args: ["--login"],
