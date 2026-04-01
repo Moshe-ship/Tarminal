@@ -4,34 +4,43 @@ import SwiftTerm
 struct TerminalContainerView: NSViewRepresentable {
     let tab: TerminalTab
     @ObservedObject var themeManager = ThemeManager.shared
-    @AppStorage("opacity") var opacity: Double = 1.0
+    @AppStorage("opacity") private var opacity: Double = 1.0
 
     func makeNSView(context: Context) -> NSView {
         let container = NSView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
         container.autoresizesSubviews = true
 
-        // Vibrancy layer (frosted glass effect)
-        let vibrancyView = NSVisualEffectView(frame: container.bounds)
-        vibrancyView.autoresizingMask = [.width, .height]
-        vibrancyView.material = .hudWindow
-        vibrancyView.blendingMode = .behindWindow
-        vibrancyView.state = .active
-        vibrancyView.alphaValue = opacity < 1.0 ? 1.0 : 0.0 // Only show when transparent
-        container.addSubview(vibrancyView)
-        context.coordinator.vibrancyView = vibrancyView
+        // --- Vibrancy layer (frosted glass, behind everything) ---
+        let vibrancy = NSVisualEffectView(frame: container.bounds)
+        vibrancy.autoresizingMask = [.width, .height]
+        vibrancy.blendingMode = .behindWindow
+        vibrancy.material = .hudWindow
+        vibrancy.state = .active
+        vibrancy.isHidden = (opacity >= 1.0)
+        container.addSubview(vibrancy)
+        context.coordinator.vibrancyView = vibrancy
 
-        // Terminal view
+        // --- Terminal view (above vibrancy) ---
         let terminalView = LocalProcessTerminalView(frame: container.bounds)
         terminalView.autoresizingMask = [.width, .height]
+
+        // Apply theme with transparency
         applyTheme(to: terminalView)
 
-        // Set both delegates
+        // Enable clickable URLs:
+        // linkReporting defaults to .implicit (OSC 8 + auto-detected URLs) — already set.
+        // Set linkHighlightMode to .hover: URLs underline on hover, click to open.
+        // For Cmd+click like iTerm2, change to .hoverWithModifier.
+        terminalView.linkHighlightMode = .hover
+
+        // Set process delegate only. Do NOT override terminalDelegate —
+        // LocalProcessTerminalView sets itself as terminalDelegate in setup()
+        // and uses it to bridge pty I/O. Overriding it breaks keyboard input.
         terminalView.processDelegate = context.coordinator
-        terminalView.terminalDelegate = context.coordinator
 
         container.addSubview(terminalView)
 
-        // BiDi overlay
+        // --- BiDi overlay ---
         let overlay = BiDiOverlayView(frame: container.bounds)
         overlay.autoresizingMask = [.width, .height]
         overlay.terminalView = terminalView
@@ -46,7 +55,6 @@ struct TerminalContainerView: NSViewRepresentable {
             let shell = UserDefaults.standard.string(forKey: "shellPath")
                 ?? ProcessInfo.processInfo.environment["SHELL"]
                 ?? "/bin/zsh"
-
             terminalView.startProcess(
                 executable: shell,
                 args: ["--login"],
@@ -63,18 +71,13 @@ struct TerminalContainerView: NSViewRepresentable {
         if let tv = context.coordinator.terminalView {
             applyTheme(to: tv)
             tv.window?.makeFirstResponder(tv)
-
-            // Update transparency
-            if let vibrancy = context.coordinator.vibrancyView {
-                if opacity < 1.0 {
-                    vibrancy.alphaValue = 1.0
-                    tv.alphaValue = CGFloat(opacity)
-                } else {
-                    vibrancy.alphaValue = 0.0
-                    tv.alphaValue = 1.0
-                }
-            }
         }
+
+        // Show/hide vibrancy based on opacity setting
+        if let vibrancy = context.coordinator.vibrancyView {
+            vibrancy.isHidden = (opacity >= 1.0)
+        }
+
         context.coordinator.overlayView?.needsDisplay = true
     }
 
@@ -84,17 +87,24 @@ struct TerminalContainerView: NSViewRepresentable {
 
     private func applyTheme(to terminalView: LocalProcessTerminalView) {
         let theme = themeManager.currentTheme
-        terminalView.nativeBackgroundColor = theme.background.nsColor
+
+        // When opacity < 1.0, use a translucent background so vibrancy bleeds through.
+        // This keeps text fully opaque (unlike setting alphaValue on the whole view).
+        let bgAlpha = CGFloat(opacity)
+        let bgColor = theme.background.nsColor.withAlphaComponent(bgAlpha)
+        terminalView.nativeBackgroundColor = bgColor
         terminalView.nativeForegroundColor = theme.foreground.nsColor
+
+        // Ensure the layer respects transparency
+        terminalView.layer?.isOpaque = (opacity >= 1.0)
+        terminalView.layer?.backgroundColor = bgColor.cgColor
 
         let font = NSFont(name: theme.fontName, size: theme.fontSize)
             ?? NSFont.monospacedSystemFont(ofSize: theme.fontSize, weight: .regular)
         terminalView.font = font
 
-        // Apply cursor color
+        // Cursor and selection colors
         terminalView.caretColor = theme.cursor.nsColor
-
-        // Apply selection color
         terminalView.selectedTextBackgroundColor = theme.selection.nsColor
 
         // Apply ANSI colors
@@ -112,7 +122,7 @@ struct TerminalContainerView: NSViewRepresentable {
 
     // MARK: - Coordinator
 
-    class Coordinator: NSObject, TerminalViewDelegate, LocalProcessTerminalViewDelegate {
+    class Coordinator: NSObject, LocalProcessTerminalViewDelegate {
         let tab: TerminalTab
         var terminalView: LocalProcessTerminalView?
         var overlayView: BiDiOverlayView?
@@ -129,11 +139,11 @@ struct TerminalContainerView: NSViewRepresentable {
 
         deinit { refreshTimer?.invalidate() }
 
-        // MARK: TerminalViewDelegate
+        // MARK: LocalProcessTerminalViewDelegate
 
-        func sizeChanged(source: TerminalView, newCols: Int, newRows: Int) {}
+        func sizeChanged(source: LocalProcessTerminalView, newCols: Int, newRows: Int) {}
 
-        func setTerminalTitle(source: TerminalView, title: String) {
+        func setTerminalTitle(source: LocalProcessTerminalView, title: String) {
             DispatchQueue.main.async {
                 self.tab.title = title.isEmpty ? "zsh" : title
             }
@@ -145,53 +155,12 @@ struct TerminalContainerView: NSViewRepresentable {
             }
         }
 
-        func send(source: TerminalView, data: ArraySlice<UInt8>) {
-            // Data is sent by SwiftTerm internally for LocalProcess
-        }
-
-        func scrolled(source: TerminalView, position: Double) {}
-
-        func requestOpenLink(source: TerminalView, link: String, params: [String: String]) {
-            // Open URLs in default browser
-            if let url = URL(string: link) {
-                NSWorkspace.shared.open(url)
-            }
-        }
-
-        func bell(source: TerminalView) {
-            NSSound.beep()
-        }
-
-        func clipboardCopy(source: TerminalView, content: Data) {
-            let pasteboard = NSPasteboard.general
-            pasteboard.clearContents()
-            pasteboard.setData(content, forType: .string)
-        }
-
-        func iTermContent(source: TerminalView, content: ArraySlice<UInt8>) {}
-
-        func rangeChanged(source: TerminalView, startY: Int, endY: Int) {
-            overlayView?.needsDisplay = true
-        }
-
-        // MARK: LocalProcessTerminalViewDelegate
-
-        func sizeChanged(source: LocalProcessTerminalView, newCols: Int, newRows: Int) {}
-
-        func setTerminalTitle(source: LocalProcessTerminalView, title: String) {
-            DispatchQueue.main.async {
-                self.tab.title = title.isEmpty ? "zsh" : title
-            }
-        }
-
-        func hostCurrentDirectoryUpdate(source: LocalProcessTerminalView, directory: String?) {
-            if let dir = directory {
-                DispatchQueue.main.async { self.tab.workingDirectory = dir }
-            }
-        }
-
         func processTerminated(source: TerminalView, exitCode: Int32?) {
             DispatchQueue.main.async { self.tab.isTerminated = true }
         }
+
+        // URL clicking: LocalProcessTerminalView conforms to TerminalViewDelegate and
+        // inherits the default requestOpenLink implementation which calls
+        // NSWorkspace.shared.open(url). No extra code needed here.
     }
 }
