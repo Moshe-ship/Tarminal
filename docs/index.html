@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tarminal ترمنال — The first terminal that speaks Arabic</title>
+<meta name="description" content="Native macOS terminal with proper Arabic RTL text support. Connected letters, bidirectional text, open source.">
+<meta property="og:title" content="Tarminal ترمنال">
+<meta property="og:description" content="The first terminal that speaks Arabic. 440 million speakers. Zero proper terminals. Until now.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Kufi+Arabic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #050507;
+    --surface: #0a0a0e;
+    --green: #00ff41;
+    --green-dim: #00cc33;
+    --green-glow: rgba(0, 255, 65, 0.15);
+    --green-faint: rgba(0, 255, 65, 0.04);
+    --text: #c8c8c8;
+    --text-dim: #555;
+    --mono: 'JetBrains Mono', monospace;
+    --arabic: 'Noto Kufi Arabic', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--void);
+    color: var(--text);
+    font-family: var(--mono);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Scanline texture */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 255, 65, 0.008) 2px,
+      rgba(0, 255, 65, 0.008) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* Radial glow behind terminal */
+  .glow {
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--green-glow) 0%, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -55%);
+    pointer-events: none;
+    animation: breathe 6s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.4; transform: translate(-50%, -55%) scale(1); }
+    50% { opacity: 0.7; transform: translate(-50%, -55%) scale(1.05); }
+  }
+
+  /* Layout */
+  .page {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 10;
+    gap: 0;
+  }
+
+  /* Top: branding */
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 10px;
+    animation: fadeDown 1s ease-out both;
+  }
+
+  .brand-letter {
+    font-family: var(--arabic);
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--green);
+    line-height: 1;
+    text-shadow: 0 0 40px var(--green-glow), 0 0 80px rgba(0,255,65,0.08);
+    animation: pulse-letter 4s ease-in-out infinite;
+  }
+
+  @keyframes pulse-letter {
+    0%, 100% { opacity: 1; text-shadow: 0 0 40px var(--green-glow); }
+    50% { opacity: 0.85; text-shadow: 0 0 60px var(--green-glow), 0 0 100px rgba(0,255,65,0.1); }
+  }
+
+  .brand-name {
+    font-size: 15px;
+    font-weight: 300;
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  /* Tagline */
+  .tagline {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-bottom: 36px;
+    animation: fadeDown 1s ease-out 0.15s both;
+  }
+
+  /* Terminal mockup */
+  .terminal {
+    width: 580px;
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgba(0,255,65,0.03),
+      0 20px 60px rgba(0,0,0,0.6),
+      0 0 120px rgba(0,255,65,0.03);
+    animation: floatUp 1s ease-out 0.3s both;
+  }
+
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #ffbd2e; }
+  .dot-g { background: #28c840; }
+
+  .terminal-title {
+    flex: 1;
+    text-align: center;
+    font-size: 11px;
+    color: #444;
+    letter-spacing: 0.5px;
+    margin-right: 40px;
+  }
+
+  .terminal-body {
+    padding: 20px 22px 24px;
+    font-size: 13.5px;
+    line-height: 1.8;
+  }
+
+  .prompt { color: var(--green-dim); }
+  .cmd { color: var(--text); }
+  .output { color: #888; }
+  .arabic-text {
+    font-family: var(--arabic);
+    color: var(--green);
+    font-size: 15px;
+    direction: rtl;
+    display: inline;
+  }
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 15px;
+    background: var(--green);
+    vertical-align: text-bottom;
+    margin-left: 2px;
+    animation: blink 1.2s step-end infinite;
+  }
+
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Stat line */
+  .stat {
+    margin-top: 28px;
+    font-size: 12px;
+    color: #444;
+    letter-spacing: 0.5px;
+    animation: fadeDown 1s ease-out 0.5s both;
+  }
+  .stat em {
+    font-style: normal;
+    color: var(--green-dim);
+  }
+
+  /* Pills */
+  .pills {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    animation: fadeDown 1s ease-out 0.6s both;
+  }
+
+  .pill {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.8px;
+    padding: 4px 12px;
+    border: 1px solid rgba(0,255,65,0.12);
+    border-radius: 100px;
+    color: var(--green-dim);
+    background: var(--green-faint);
+  }
+
+  /* CTA */
+  .cta {
+    margin-top: 32px;
+    animation: fadeDown 1s ease-out 0.75s both;
+  }
+
+  .cta a {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 32px;
+    background: var(--green);
+    color: var(--void);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.2s;
+    box-shadow: 0 0 30px rgba(0,255,65,0.2);
+  }
+
+  .cta a:hover {
+    background: #00e639;
+    box-shadow: 0 0 50px rgba(0,255,65,0.35);
+    transform: translateY(-1px);
+  }
+
+  .cta a:active {
+    transform: translateY(0);
+    box-shadow: 0 0 20px rgba(0,255,65,0.15);
+  }
+
+  .cta-arrow {
+    font-size: 16px;
+    transition: transform 0.2s;
+  }
+
+  .cta a:hover .cta-arrow {
+    transform: translateX(3px);
+  }
+
+  /* Arabic subtitle under button */
+  .cta-sub {
+    margin-top: 12px;
+    font-family: var(--arabic);
+    font-size: 12px;
+    color: #333;
+    direction: rtl;
+    animation: fadeDown 1s ease-out 0.9s both;
+  }
+
+  /* Animations */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes floatUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Corner markers */
+  .corner { position: fixed; pointer-events: none; z-index: 5; }
+  .corner-tl { top: 24px; left: 24px; }
+  .corner-br { bottom: 24px; right: 24px; }
+  .corner span {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: #222;
+  }
+  .corner-br span {
+    text-align: right;
+    font-family: var(--arabic);
+    letter-spacing: 0;
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .terminal { width: 92vw; }
+    .brand-letter { font-size: 32px; }
+    .brand-name { font-size: 12px; letter-spacing: 5px; }
+    .pills { flex-wrap: wrap; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="glow"></div>
+
+<div class="corner corner-tl"><span>v0.5.0</span></div>
+<div class="corner corner-br"><span>مفتوح المصدر</span></div>
+
+<div class="page">
+
+  <div class="brand">
+    <span class="brand-letter">ت</span>
+    <span class="brand-name">Tarminal</span>
+  </div>
+
+  <div class="tagline">The first terminal that speaks Arabic</div>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+      <span class="terminal-title">Tarminal &mdash; zsh</span>
+    </div>
+    <div class="terminal-body">
+      <div><span class="prompt">~</span> <span class="cmd">echo "hello from tarminal"</span></div>
+      <div><span class="output">hello from tarminal</span></div>
+      <div><span class="prompt">~</span> <span class="cmd">echo "<span class="arabic-text">مرحبا يا صاحبي</span>"</span></div>
+      <div><span class="arabic-text" style="color:#888;">مرحبا يا صاحبي</span></div>
+      <div><span class="prompt">~</span> <span class="arabic-text" style="color:#00cc33; font-size:13px;">أول طرفية تتكلم عربي</span> <span class="cursor"></span></div>
+    </div>
+  </div>
+
+  <div class="stat">
+    <em>440 million</em> Arabic speakers. Zero proper terminals. <em>Until now.</em>
+  </div>
+
+  <div class="pills">
+    <span class="pill">RTL Support</span>
+    <span class="pill">Connected Letters</span>
+    <span class="pill">Native macOS</span>
+    <span class="pill">Open Source</span>
+  </div>
+
+  <div class="cta">
+    <a href="https://github.com/Moshe-ship/Tarminal">
+      Download from GitHub
+      <span class="cta-arrow">&rarr;</span>
+    </a>
+  </div>
+
+  <div class="cta-sub">حمّل مجاناً &mdash; مفتوح المصدر</div>
+
+</div>
+
+</body>
+</html>
