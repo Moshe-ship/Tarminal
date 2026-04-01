@@ -9,6 +9,11 @@ class BiDiOverlayView: NSView {
     private let cursorMapper = CursorMapper()
     private var cachedRTLRows: Set<Int> = []
 
+    // Pass all mouse/keyboard events through to the terminal underneath
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        return nil // Makes this view completely transparent to input
+    }
+
     // Cell dimensions (updated when terminal resizes)
     var cellWidth: CGFloat = 8
     var cellHeight: CGFloat = 16
