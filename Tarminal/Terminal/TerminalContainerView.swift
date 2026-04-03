@@ -50,8 +50,10 @@ struct TerminalContainerView: NSViewRepresentable {
         // Clickable URLs
         terminalView.linkHighlightMode = .hover
 
-        // Metal GPU rendering — Apple Silicon native
-        if useMetalRenderer {
+        // Metal GPU rendering — only when BiDi overlay is off.
+        // MTKView's CAMetalLayer renders independently and ignores NSView z-order,
+        // so the BiDi overlay can't paint over it. Use CoreGraphics when BiDi is active.
+        if useMetalRenderer && bidiMode == "ltr" {
             terminalView.enableMetal()
         }
 
@@ -61,15 +63,15 @@ struct TerminalContainerView: NSViewRepresentable {
 
         container.addSubview(terminalView)
 
-        // --- BiDi overlay (must be topmost to cover Metal/CoreGraphics rendering) ---
-        let overlay = BiDiOverlayView(frame: container.bounds)
+        // --- BiDi overlay as SUBVIEW of terminal view ---
+        // Must share the same coordinate space to align with SwiftTerm's row rendering.
+        // Adding as sibling caused misaligned Y positions.
+        let overlay = BiDiOverlayView(frame: terminalView.bounds)
         overlay.autoresizingMask = [.width, .height]
-        overlay.wantsLayer = true
-        overlay.layer?.zPosition = 100 // Force above Metal MTKView
         overlay.terminalView = terminalView
         overlay.bidiMode = bidiMode
         overlay.arabicFontName = themeManager.currentTheme.arabicFontName
-        container.addSubview(overlay)
+        terminalView.addSubview(overlay)
 
         // Store references
         context.coordinator.terminalView = terminalView

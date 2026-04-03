@@ -29,6 +29,11 @@ class BiDiOverlayView: NSView {
         if bidiMode == "ltr" { return }
 
         let terminal = terminalView.getTerminal()
+
+        // Don't touch alternate screen buffer — TUI apps (Claude Code, vim, htop,
+        // less, man, etc.) handle their own rendering and cursor. BiDi overlay
+        // only applies to normal shell output.
+        if terminal.isCurrentBufferAlternate { return }
         let cols = terminal.cols
         let rows = terminal.rows
 

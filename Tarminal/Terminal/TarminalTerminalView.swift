@@ -36,6 +36,8 @@ class TarminalTerminalView: LocalProcessTerminalView {
     private var currentLineIsRTL: Bool {
         guard bidiMode != "ltr" else { return false }
         let terminal = getTerminal()
+        // Don't remap arrows for TUI apps (Claude Code, vim, htop, etc.)
+        if terminal.isCurrentBufferAlternate { return false }
         if bidiMode == "rtl" { return true }
         return BiDiInputHandler.currentLineDirection(terminal: terminal) == .rtl
     }
