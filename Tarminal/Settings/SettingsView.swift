@@ -318,15 +318,17 @@ struct SettingsView: View {
     @State private var sudoSetupFailed = false
 
     private func enableSudoTouchID() {
-        let script = """
-        do shell script "echo 'auth       sufficient     pam_tid.so' > /etc/pam.d/sudo_local" with administrator privileges
-        """
-        if let appleScript = NSAppleScript(source: script) {
-            var error: NSDictionary?
-            appleScript.executeAndReturnError(&error)
-            if error != nil {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
+        process.arguments = ["-e", "do shell script \"echo 'auth       sufficient     pam_tid.so' > /etc/pam.d/sudo_local\" with administrator privileges"]
+        do {
+            try process.run()
+            process.waitUntilExit()
+            if process.terminationStatus != 0 {
                 sudoSetupFailed = true
             }
+        } catch {
+            sudoSetupFailed = true
         }
     }
 
