@@ -1,10 +1,7 @@
 import AppKit
 import SwiftTerm
 
-/// Subclass of LocalProcessTerminalView for:
-/// - Bell control (sound + dock bounce)
-/// - Metal GPU rendering
-/// - RTL-aware arrow key remapping (first of its kind)
+/// Custom terminal view: bell control, RTL sublayer, arrow key remapping.
 class TarminalTerminalView: LocalProcessTerminalView {
 
     var bellSoundEnabled: Bool = true
@@ -12,23 +9,54 @@ class TarminalTerminalView: LocalProcessTerminalView {
     var arabicFontName: String = "GeezaPro"
     var bidiMode: String = "auto"
 
+    private var bidiLayer: BiDiLayer?
+    private var refreshTimer: Timer?
+
     func enableMetal() {
-        do {
-            try setUseMetal(true)
-        } catch {
-            // Metal not available — CoreGraphics fallback
+        do { try setUseMetal(true) } catch {}
+    }
+
+    /// Set up the BiDi sublayer after the view is in a window
+    func setupBiDiLayer() {
+        guard bidiLayer == nil else { return }
+        wantsLayer = true
+        let layer = BiDiLayer()
+        layer.terminalView = self
+        layer.frame = self.bounds
+        layer.contentsScale = window?.backingScaleFactor ?? 2.0
+        layer.needsDisplayOnBoundsChange = true
+        self.layer?.addSublayer(layer)
+        bidiLayer = layer
+
+        // Refresh the BiDi layer periodically to track terminal output
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            self?.bidiLayer?.frame = self?.bounds ?? .zero
+            self?.bidiLayer?.setNeedsDisplay()
         }
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil {
+            setupBiDiLayer()
+        }
+    }
+
+    override func layout() {
+        super.layout()
+        bidiLayer?.frame = bounds
+        bidiLayer?.contentsScale = window?.backingScaleFactor ?? 2.0
+    }
+
+    deinit {
+        refreshTimer?.invalidate()
     }
 
     // MARK: - Bell
 
     override open func bell(source: Terminal) {
-        if bellSoundEnabled {
-            NSSound.beep()
-        }
-        if bellBounceEnabled {
-            NSApp.requestUserAttention(.informationalRequest)
-        }
+        if bellSoundEnabled { NSSound.beep() }
+        if bellBounceEnabled { NSApp.requestUserAttention(.informationalRequest) }
     }
 
     // MARK: - RTL Arrow Key Remapping
@@ -36,49 +64,32 @@ class TarminalTerminalView: LocalProcessTerminalView {
     private var currentLineIsRTL: Bool {
         guard bidiMode != "ltr" else { return false }
         let terminal = getTerminal()
-        // Don't remap arrows for TUI apps (Claude Code, vim, htop, etc.)
         if terminal.isCurrentBufferAlternate { return false }
         if bidiMode == "rtl" { return true }
         return BiDiInputHandler.currentLineDirection(terminal: terminal) == .rtl
     }
 
-    // Left arrow: on RTL line, move cursor logically forward (visually left = forward in RTL)
     override open func moveLeft(_ sender: Any?) {
         if currentLineIsRTL {
-            let terminal = getTerminal()
-            send(terminal.applicationCursor ? EscapeSequences.moveRightApp : EscapeSequences.moveRightNormal)
+            send(getTerminal().applicationCursor ? EscapeSequences.moveRightApp : EscapeSequences.moveRightNormal)
         } else {
             super.moveLeft(sender)
         }
     }
 
-    // Right arrow: on RTL line, move cursor logically backward
     override open func moveRight(_ sender: Any?) {
         if currentLineIsRTL {
-            let terminal = getTerminal()
-            send(terminal.applicationCursor ? EscapeSequences.moveLeftApp : EscapeSequences.moveLeftNormal)
+            send(getTerminal().applicationCursor ? EscapeSequences.moveLeftApp : EscapeSequences.moveLeftNormal)
         } else {
             super.moveRight(sender)
         }
     }
 
-    // Home key: on RTL line, go to logical end (visual start = right edge)
     override open func moveToBeginningOfLine(_ sender: Any?) {
-        if currentLineIsRTL {
-            // Send Ctrl+E (end of line in readline/zsh)
-            send([0x05])
-        } else {
-            super.moveToBeginningOfLine(sender)
-        }
+        if currentLineIsRTL { send([0x05]) } else { super.moveToBeginningOfLine(sender) }
     }
 
-    // End key: on RTL line, go to logical beginning (visual end = left edge)
     override open func moveToEndOfLine(_ sender: Any?) {
-        if currentLineIsRTL {
-            // Send Ctrl+A (beginning of line in readline/zsh)
-            send([0x01])
-        } else {
-            super.moveToEndOfLine(sender)
-        }
+        if currentLineIsRTL { send([0x01]) } else { super.moveToEndOfLine(sender) }
     }
 }

@@ -13,13 +13,12 @@ struct TerminalContainerView: NSViewRepresentable {
     @AppStorage("bellBounce") private var bellBounce: Bool = false
     @AppStorage("titleBarStyle") private var titleBarStyle: String = "directory"
     @AppStorage("scrollbackLines") private var scrollbackLines: Int = 10000
-    @AppStorage("useMetalRenderer") private var useMetalRenderer: Bool = true
 
     func makeNSView(context: Context) -> NSView {
         let container = TerminalDropView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
         container.autoresizesSubviews = true
 
-        // --- Vibrancy layer ---
+        // Vibrancy layer
         let vibrancy = NSVisualEffectView(frame: container.bounds)
         vibrancy.autoresizingMask = [.width, .height]
         vibrancy.blendingMode = .behindWindow
@@ -29,53 +28,27 @@ struct TerminalContainerView: NSViewRepresentable {
         container.addSubview(vibrancy)
         context.coordinator.vibrancyView = vibrancy
 
-        // --- Terminal view (custom subclass for bell control) ---
+        // Terminal view — RTL rendering happens inside draw(), no overlay needed
         let terminalView = TarminalTerminalView(frame: container.bounds)
         terminalView.autoresizingMask = [.width, .height]
 
-        // Bell settings
         terminalView.bellSoundEnabled = bellSound
         terminalView.bellBounceEnabled = bellBounce
         terminalView.arabicFontName = themeManager.currentTheme.arabicFontName
         terminalView.bidiMode = bidiMode
 
-        // Apply theme + settings
         applyTheme(to: terminalView)
         applyCursorStyle(to: terminalView)
         terminalView.optionAsMetaKey = optionAsMeta
-
-        // Scrollback — use the proper API that resizes the live buffer
         terminalView.changeScrollback(scrollbackLines)
-
-        // Clickable URLs
         terminalView.linkHighlightMode = .hover
 
-        // Metal GPU rendering — only when BiDi overlay is off.
-        // MTKView's CAMetalLayer renders independently and ignores NSView z-order,
-        // so the BiDi overlay can't paint over it. Use CoreGraphics when BiDi is active.
-        if useMetalRenderer && bidiMode == "ltr" {
-            terminalView.enableMetal()
-        }
-
-        // Process delegate
         terminalView.processDelegate = context.coordinator
         context.coordinator.titleBarStyle = titleBarStyle
 
         container.addSubview(terminalView)
 
-        // --- BiDi overlay as SUBVIEW of terminal view ---
-        // Must share the same coordinate space to align with SwiftTerm's row rendering.
-        // Adding as sibling caused misaligned Y positions.
-        let overlay = BiDiOverlayView(frame: terminalView.bounds)
-        overlay.autoresizingMask = [.width, .height]
-        overlay.terminalView = terminalView
-        overlay.bidiMode = bidiMode
-        overlay.arabicFontName = themeManager.currentTheme.arabicFontName
-        terminalView.addSubview(overlay)
-
-        // Store references
         context.coordinator.terminalView = terminalView
-        context.coordinator.overlayView = overlay
         container.coordinator = context.coordinator
 
         // Start shell
@@ -98,7 +71,6 @@ struct TerminalContainerView: NSViewRepresentable {
                 shell = "/bin/zsh"
             }
 
-            // Working directory: if "current" is selected and tab has a real dir, use it
             let newTabDir = UserDefaults.standard.string(forKey: "newTabWorkingDir") ?? "home"
             let workDir: String?
             switch newTabDir {
@@ -108,7 +80,7 @@ struct TerminalContainerView: NSViewRepresentable {
             case "root":
                 workDir = "/"
             default:
-                workDir = nil // home directory (default)
+                workDir = nil
             }
 
             terminalView.startProcess(
@@ -131,21 +103,14 @@ struct TerminalContainerView: NSViewRepresentable {
             tv.optionAsMetaKey = optionAsMeta
             tv.bellSoundEnabled = bellSound
             tv.bellBounceEnabled = bellBounce
-
-            // Update scrollback via the proper API
+            tv.arabicFontName = themeManager.currentTheme.arabicFontName
+            tv.bidiMode = bidiMode
             tv.changeScrollback(scrollbackLines)
-
             tv.window?.makeFirstResponder(tv)
         }
 
         if let vibrancy = context.coordinator.vibrancyView {
             vibrancy.isHidden = (opacity >= 1.0)
-        }
-
-        if let overlay = context.coordinator.overlayView {
-            overlay.bidiMode = bidiMode
-            overlay.arabicFontName = themeManager.currentTheme.arabicFontName
-            overlay.needsDisplay = true
         }
 
         context.coordinator.titleBarStyle = titleBarStyle
@@ -155,33 +120,24 @@ struct TerminalContainerView: NSViewRepresentable {
         Coordinator(tab: tab)
     }
 
-    // MARK: - Apply Settings
-
     private func applyTheme(to terminalView: TarminalTerminalView) {
         let theme = themeManager.currentTheme
-
         let bgAlpha = CGFloat(opacity)
         let bgColor = theme.background.nsColor.withAlphaComponent(bgAlpha)
         terminalView.nativeBackgroundColor = bgColor
         terminalView.nativeForegroundColor = theme.foreground.nsColor
-
         terminalView.layer?.isOpaque = (opacity >= 1.0)
         terminalView.layer?.backgroundColor = bgColor.cgColor
 
         let font = NSFont(name: theme.fontName, size: theme.fontSize)
             ?? NSFont.monospacedSystemFont(ofSize: theme.fontSize, weight: .regular)
         terminalView.font = font
-
         terminalView.caretColor = theme.cursor.nsColor
         terminalView.selectedTextBackgroundColor = theme.selection.nsColor
 
         if theme.ansiColors.count == 16 {
             let colors = theme.ansiColors.map {
-                SwiftTerm.Color(
-                    red: UInt16($0.r * 65535),
-                    green: UInt16($0.g * 65535),
-                    blue: UInt16($0.b * 65535)
-                )
+                SwiftTerm.Color(red: UInt16($0.r * 65535), green: UInt16($0.g * 65535), blue: UInt16($0.b * 65535))
             }
             terminalView.installColors(colors)
         }
@@ -191,15 +147,10 @@ struct TerminalContainerView: NSViewRepresentable {
         let terminal = terminalView.getTerminal()
         let style: CursorStyle
         switch cursorStyle {
-        case "underline":
-            style = cursorBlink ? .blinkUnderline : .steadyUnderline
-        case "bar":
-            style = cursorBlink ? .blinkBar : .steadyBar
-        default:
-            style = cursorBlink ? .blinkBlock : .steadyBlock
+        case "underline": style = cursorBlink ? .blinkUnderline : .steadyUnderline
+        case "bar": style = cursorBlink ? .blinkBar : .steadyBar
+        default: style = cursorBlink ? .blinkBlock : .steadyBlock
         }
-        // Use setCursorStyle — direct assignment to options.cursorStyle
-        // bypasses the delegate and never updates the caret view
         terminal.setCursorStyle(style)
     }
 
@@ -208,36 +159,22 @@ struct TerminalContainerView: NSViewRepresentable {
     class Coordinator: NSObject, LocalProcessTerminalViewDelegate {
         let tab: TerminalTab
         var terminalView: TarminalTerminalView?
-        var overlayView: BiDiOverlayView?
         var vibrancyView: NSVisualEffectView?
-        private var refreshTimer: Timer?
-
         var titleBarStyle: String = "directory"
 
         init(tab: TerminalTab) {
             self.tab = tab
             super.init()
-            refreshTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-                self?.overlayView?.needsDisplay = true
-            }
         }
 
-        deinit { refreshTimer?.invalidate() }
-
-        /// Called by TerminalDropView when files are dropped
         func handleFileDrop(paths: [String]) {
             guard let tv = terminalView else { return }
-            let escaped = paths.map { path in
-                path.replacingOccurrences(of: " ", with: "\\ ")
-                    .replacingOccurrences(of: "(", with: "\\(")
-                    .replacingOccurrences(of: ")", with: "\\)")
-                    .replacingOccurrences(of: "'", with: "\\'")
-            }
-            let text = escaped.joined(separator: " ")
-            tv.send(txt: text)
+            let escaped = paths.map { $0.replacingOccurrences(of: " ", with: "\\ ")
+                .replacingOccurrences(of: "(", with: "\\(")
+                .replacingOccurrences(of: ")", with: "\\)")
+                .replacingOccurrences(of: "'", with: "\\'") }
+            tv.send(txt: escaped.joined(separator: " "))
         }
-
-        // MARK: LocalProcessTerminalViewDelegate
 
         func sizeChanged(source: LocalProcessTerminalView, newCols: Int, newRows: Int) {}
 
@@ -245,17 +182,13 @@ struct TerminalContainerView: NSViewRepresentable {
             DispatchQueue.main.async { [self] in
                 let rawTitle = title.isEmpty ? "zsh" : title
                 self.tab.title = rawTitle
-
                 switch self.titleBarStyle {
-                case "shell":
-                    source.window?.title = rawTitle
+                case "shell": source.window?.title = rawTitle
                 case "directory":
                     let dir = (self.tab.workingDirectory as NSString).lastPathComponent
                     source.window?.title = dir.isEmpty ? rawTitle : dir
-                case "none":
-                    source.window?.title = ""
-                default:
-                    source.window?.title = rawTitle
+                case "none": source.window?.title = ""
+                default: source.window?.title = rawTitle
                 }
             }
         }
@@ -283,8 +216,8 @@ struct TerminalContainerView: NSViewRepresentable {
 class TerminalDropView: NSView {
     weak var coordinator: TerminalContainerView.Coordinator?
 
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
+    override init(frame: NSRect) {
+        super.init(frame: frame)
         registerForDraggedTypes([.fileURL, .png, .tiff, .string])
     }
 
@@ -294,19 +227,12 @@ class TerminalDropView: NSView {
     }
 
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
-        let canRead = sender.draggingPasteboard.canReadObject(forClasses: [NSURL.self], options: [
-            .urlReadingFileURLsOnly: true
-        ])
-        return canRead ? .copy : []
+        sender.draggingPasteboard.canReadObject(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) ? .copy : []
     }
 
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
-        guard let urls = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [
-            .urlReadingFileURLsOnly: true
-        ]) as? [URL] else { return false }
-
-        let paths = urls.map(\.path)
-        coordinator?.handleFileDrop(paths: paths)
+        guard let urls = sender.draggingPasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] else { return false }
+        coordinator?.handleFileDrop(paths: urls.map(\.path))
         return true
     }
 }
