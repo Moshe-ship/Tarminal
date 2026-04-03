@@ -8,7 +8,7 @@ struct TerminalContainerView: NSViewRepresentable {
     @AppStorage("cursorStyle") private var cursorStyle: String = "block"
     @AppStorage("cursorBlink") private var cursorBlink: Bool = false
     @AppStorage("optionAsMeta") private var optionAsMeta: Bool = false
-    @AppStorage("bidiMode") private var bidiMode: String = "auto"
+    @AppStorage("bidiMode") private var bidiMode: String = "ltr"
     @AppStorage("bellSound") private var bellSound: Bool = true
     @AppStorage("bellBounce") private var bellBounce: Bool = false
     @AppStorage("titleBarStyle") private var titleBarStyle: String = "directory"

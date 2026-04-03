@@ -14,11 +14,13 @@ class BiDiLayer: CALayer {
         guard let terminalView = terminalView else { return }
 
         let bidiMode = terminalView.bidiMode
+        // BiDi only renders when explicitly enabled ("auto" or "rtl")
+        // Default is "ltr" = standard terminal behavior, zero interference
         if bidiMode == "ltr" { return }
 
         let terminal = terminalView.getTerminal()
 
-        // Skip TUI apps (Claude Code, vim, htop, etc.)
+        // Skip alternate screen buffer (vim, less, man, etc.)
         if terminal.isCurrentBufferAlternate { return }
 
         let cols = terminal.cols

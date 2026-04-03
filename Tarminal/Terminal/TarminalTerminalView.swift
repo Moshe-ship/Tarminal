@@ -7,7 +7,7 @@ class TarminalTerminalView: LocalProcessTerminalView {
     var bellSoundEnabled: Bool = true
     var bellBounceEnabled: Bool = false
     var arabicFontName: String = "GeezaPro"
-    var bidiMode: String = "auto"
+    var bidiMode: String = "ltr"
 
     private var bidiLayer: BiDiLayer?
     private var refreshTimer: Timer?

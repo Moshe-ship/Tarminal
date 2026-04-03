@@ -15,7 +15,7 @@ struct SettingsView: View {
     @AppStorage("useMetalRenderer") private var useMetalRenderer: Bool = true
 
     // Arabic / BiDi
-    @AppStorage("bidiMode") private var bidiMode: String = "auto"
+    @AppStorage("bidiMode") private var bidiMode: String = "ltr"
 
     // System
     @AppStorage("confirmClose") private var confirmClose: Bool = true
@@ -161,9 +161,9 @@ struct SettingsView: View {
                 }
 
                 Picker("BiDi Mode", selection: $bidiMode) {
-                    Text("Auto-detect (recommended)").tag("auto")
-                    Text("Always LTR").tag("ltr")
-                    Text("Always RTL").tag("rtl")
+                    Text("Off (standard terminal)").tag("ltr")
+                    Text("Auto-detect RTL lines").tag("auto")
+                    Text("Force all lines RTL").tag("rtl")
                 }
             }
 
