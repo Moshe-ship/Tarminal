@@ -3,7 +3,7 @@ import SwiftTerm
 
 struct TerminalContainerView: NSViewRepresentable {
     let tab: TerminalTab
-    weak var tabManager: TabManager?
+    var tabManager: TabManager?
     @ObservedObject var themeManager = ThemeManager.shared
     @AppStorage("opacity") private var opacity: Double = 1.0
     @AppStorage("cursorStyle") private var cursorStyle: String = "block"
@@ -40,10 +40,6 @@ struct TerminalContainerView: NSViewRepresentable {
         terminalView.changeScrollback(scrollbackLines)
         terminalView.linkHighlightMode = .hover
 
-        if useMetalRenderer {
-            terminalView.enableMetal()
-        }
-
         terminalView.processDelegate = context.coordinator
         context.coordinator.titleBarStyle = titleBarStyle
         container.addSubview(terminalView)
@@ -52,7 +48,11 @@ struct TerminalContainerView: NSViewRepresentable {
         context.coordinator.tabManager = tabManager
         container.coordinator = context.coordinator
 
+        // Enable Metal AFTER view is in hierarchy (SwiftTerm requires window context)
         DispatchQueue.main.async {
+            if self.useMetalRenderer {
+                terminalView.enableMetal()
+            }
             let allowedShells = ["/bin/zsh", "/bin/bash", "/bin/sh",
                                  "/usr/local/bin/zsh", "/usr/local/bin/bash",
                                  "/usr/local/bin/fish", "/opt/homebrew/bin/zsh",
@@ -111,6 +111,14 @@ struct TerminalContainerView: NSViewRepresentable {
             tv.bellSoundEnabled = bellSound
             tv.bellBounceEnabled = bellBounce
             tv.changeScrollback(scrollbackLines)
+
+            // Apply Metal toggle to running terminals
+            if useMetalRenderer && !tv.isUsingMetalRenderer {
+                tv.enableMetal()
+            } else if !useMetalRenderer && tv.isUsingMetalRenderer {
+                try? tv.setUseMetal(false)
+            }
+
             tv.window?.makeFirstResponder(tv)
         }
         if let vibrancy = context.coordinator.vibrancyView {

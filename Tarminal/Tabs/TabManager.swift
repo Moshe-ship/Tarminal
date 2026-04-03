@@ -19,11 +19,9 @@ class TerminalTab: Identifiable, ObservableObject {
     let id = UUID()
     @Published var title: String
     @Published var workingDirectory: String
-    @Published var isActive: Bool = false
     @Published var isTerminated: Bool = false
     @Published var tabColor: TabColor = .none
     @Published var hasActivity: Bool = false
-    var lastOutputTime: Date?
 
     enum TabColor: String, CaseIterable {
         case none, red, orange, yellow, green, blue, purple, pink

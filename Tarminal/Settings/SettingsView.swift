@@ -276,6 +276,10 @@ struct SettingsView: View {
                         Text("Active")
                             .foregroundColor(.green)
                             .font(.caption)
+                    } else if sudoSetupFailed {
+                        Text("Failed — try again")
+                            .foregroundColor(.red)
+                            .font(.caption)
                     } else {
                         Button("Enable") {
                             enableSudoTouchID()
@@ -296,7 +300,7 @@ struct SettingsView: View {
                     Text("v0.3.0")
                         .foregroundColor(.secondary)
                 }
-                Text("Native macOS terminal with Arabic support and Metal GPU rendering.")
+                Text("Native macOS terminal with Metal GPU rendering and Touch ID.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -311,14 +315,18 @@ struct SettingsView: View {
         return content.contains("pam_tid.so")
     }
 
+    @State private var sudoSetupFailed = false
+
     private func enableSudoTouchID() {
-        // Use AppleScript to run the command with admin privileges (shows system auth dialog)
         let script = """
         do shell script "echo 'auth       sufficient     pam_tid.so' > /etc/pam.d/sudo_local" with administrator privileges
         """
         if let appleScript = NSAppleScript(source: script) {
             var error: NSDictionary?
             appleScript.executeAndReturnError(&error)
+            if error != nil {
+                sudoSetupFailed = true
+            }
         }
     }
 

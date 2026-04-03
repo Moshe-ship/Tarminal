@@ -3,7 +3,6 @@ import SwiftUI
 @main
 struct TarminalApp: App {
     @StateObject private var tabManager = TabManager()
-    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {

@@ -1,43 +1,49 @@
 # CLAUDE.md — Tarminal ترمنال
 
 ## What This Is
-Native macOS terminal emulator with proper Arabic/RTL text support. First of its kind — every existing Mac terminal is broken for Arabic.
+Native macOS terminal with Metal GPU rendering, Touch ID, and connected Arabic letters.
 
 ## Stack
 - **Swift + SwiftUI**
-- **SwiftTerm v1.13.0** — terminal emulation engine (VT100/xterm, PTY, buffer)
-- **Core Text** — BiDi rendering using native UBA + Arabic shaping
-- **Font cascade:** SF Mono (Latin) → Geeza Pro (Arabic)
+- **SwiftTerm v1.13.0** — terminal emulation (VT100/xterm, PTY, buffer)
+- **Metal** — GPU-accelerated rendering
+- **Core Text** — Arabic letter shaping (connected forms)
+- **Secure Enclave** — SSH key storage via SSH_SK_PROVIDER
+- **UserNotifications** — macOS notification center alerts
 
 ## Build
 ```bash
-cd /Users/mousaabumazin/Projects/Tarminal && swift build
+swift build -c release
+cp .build/release/Tarminal build/Tarminal.app/Contents/MacOS/Tarminal
+open build/Tarminal.app
 ```
-Or open in Xcode and run. Builds as standalone .app bundle.
 
-## What Works (Phase 1-3)
-- Full terminal emulation (zsh shell)
-- Arabic connected letters rendering
-- **RTL BiDi overlay** — re-renders RTL lines with correct right-to-left direction
-- iTerm2-style tabs (Cmd+T/W/1-9)
-- **Tab drag reorder** — drag tabs to rearrange
-- **Tab groups** — right-click to color-code tabs, group management
-- BiDi line analyzer (detects RTL content)
-- Cursor mapper (logical↔visual position)
-- Settings panel (font, Arabic font, BiDi mode)
-- **Cursor style** — block/underline/bar (wired to terminal)
-- **Option as Meta key** (wired to terminal)
-- **BiDi mode** — auto/ltr/rtl (wired to overlay)
-- **File drag & drop** — drop files/images into terminal to paste path
-- **Scrollback search (Cmd+F)** — uses SwiftTerm's built-in find bar
-- Clickable URLs (hover to highlight)
-- Window transparency/vibrancy
-- Standalone .app bundle
+## What Works
+- Full terminal emulation (zsh, bash, fish)
+- Metal GPU rendering (toggleable in Settings)
+- Connected Arabic letters (Core Text, automatic)
+- Touch ID for SSH (Secure Enclave keys, automatic)
+- Touch ID for sudo (one-click setup in Settings)
+- Tab groups with color coding (right-click)
+- Tab drag reorder
+- Tabs persist on switch (ZStack, no process kill)
+- Session restore on relaunch
+- macOS notifications (process finished, bell in background)
+- Tab activity indicator (blue dot on background tabs)
+- Cmd+F scrollback search
+- File drag & drop (pastes escaped path)
+- 5 themes (Dark, Light, Dracula, Nord, Sarab)
+- All settings wired: cursor style/blink, scrollback, bell, dock bounce, Option-as-Meta, opacity, title bar style, Metal toggle
+- Clickable URLs
+- Close tab confirmation
 
-## What's Left (Phase 4+)
-- [ ] Split panes
-- [ ] Full theme persistence (save custom themes)
-- [ ] App icon
-- [ ] macOS sandboxing for security
-- [ ] BiDi escape sequences (freedesktop spec)
-- [ ] GitHub repo + README
+## Architecture
+```
+TarminalApp (SwiftUI, session restore, notifications)
+  └ ContentView (ZStack of all tabs)
+      └ TerminalContainerView (NSViewRepresentable)
+          └ TarminalTerminalView (bell, Metal)
+              └ SwiftTerm (VT100/xterm, PTY)
+                  └ Core Text (Arabic shaping)
+                  └ Metal (GPU rendering)
+```

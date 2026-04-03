@@ -31,14 +31,11 @@ struct ContentView: View {
                         TerminalContainerView(tab: tab, tabManager: tabManager)
                             .opacity(tab.id == tabManager.selectedTabId ? 1 : 0)
                             .allowsHitTesting(tab.id == tabManager.selectedTabId)
-                            .onChange(of: tabManager.selectedTabId) { _ in
-                                // Clear activity when tab is selected
-                                if tab.id == tabManager.selectedTabId {
-                                    tab.hasActivity = false
-                                }
-                            }
                     }
                 }
+            }
+            .onChange(of: tabManager.selectedTabId) { newId in
+                tabManager.tabs.first { $0.id == newId }?.hasActivity = false
             }
         }
         .background(Color(nsColor: NSColor(white: 0.08, alpha: 1)))

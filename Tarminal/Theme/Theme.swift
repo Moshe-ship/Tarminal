@@ -10,7 +10,6 @@ struct TerminalTheme: Identifiable, Codable {
     var ansiColors: [CodableColor] // 16 ANSI colors
     var fontName: String
     var fontSize: CGFloat
-    var arabicFontName: String
 
     static let defaultDark = TerminalTheme(
         id: UUID(),
@@ -40,8 +39,7 @@ struct TerminalTheme: Identifiable, Codable {
             CodableColor(r: 1.0, g: 1.0, b: 1.0),
         ],
         fontName: "SFMono-Regular",
-        fontSize: 14,
-        arabicFontName: "GeezaPro"
+        fontSize: 14
     )
 }
 

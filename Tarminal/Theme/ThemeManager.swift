@@ -62,8 +62,7 @@ class ThemeManager: ObservableObject {
                     CodableColor(r: 1.0, g: 1.0, b: 1.0),
                 ],
                 fontName: "SFMono-Regular",
-                fontSize: 14,
-                arabicFontName: "GeezaPro"
+                fontSize: 14
             ),
             TerminalTheme(
                 id: UUID(),
@@ -91,8 +90,7 @@ class ThemeManager: ObservableObject {
                     CodableColor(r: 0.97, g: 0.97, b: 0.95),
                 ],
                 fontName: "SFMono-Regular",
-                fontSize: 14,
-                arabicFontName: "GeezaPro"
+                fontSize: 14
             ),
             TerminalTheme(
                 id: UUID(),
@@ -120,8 +118,7 @@ class ThemeManager: ObservableObject {
                     CodableColor(r: 0.91, g: 0.93, b: 0.94),
                 ],
                 fontName: "SFMono-Regular",
-                fontSize: 14,
-                arabicFontName: "GeezaPro"
+                fontSize: 14
             ),
             TerminalTheme(
                 id: UUID(),
@@ -149,8 +146,7 @@ class ThemeManager: ObservableObject {
                     CodableColor(r: 0.95, g: 0.92, b: 0.85),
                 ],
                 fontName: "SFMono-Regular",
-                fontSize: 14,
-                arabicFontName: "GeezaPro"
+                fontSize: 14
             ),
         ]
     }
