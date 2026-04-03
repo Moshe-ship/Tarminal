@@ -61,9 +61,11 @@ struct TerminalContainerView: NSViewRepresentable {
 
         container.addSubview(terminalView)
 
-        // --- BiDi overlay ---
+        // --- BiDi overlay (must be topmost to cover Metal/CoreGraphics rendering) ---
         let overlay = BiDiOverlayView(frame: container.bounds)
         overlay.autoresizingMask = [.width, .height]
+        overlay.wantsLayer = true
+        overlay.layer?.zPosition = 100 // Force above Metal MTKView
         overlay.terminalView = terminalView
         overlay.bidiMode = bidiMode
         overlay.arabicFontName = themeManager.currentTheme.arabicFontName

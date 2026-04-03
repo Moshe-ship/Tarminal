@@ -13,8 +13,6 @@ class BiDiOverlayView: NSView {
     /// Arabic font name — kept in sync with ThemeManager
     var arabicFontName: String = "GeezaPro"
 
-    private var cachedRTLRows: Set<Int> = []
-
     // NOT flipped — matches SwiftTerm's coordinate system (Y=0 at bottom)
     override var isFlipped: Bool { false }
 
@@ -75,12 +73,7 @@ class BiDiOverlayView: NSView {
                 needsRTL = BiDiLineAnalyzer.containsRTL(lineText)
             }
 
-            guard needsRTL else {
-                cachedRTLRows.remove(row)
-                continue
-            }
-
-            cachedRTLRows.insert(row)
+            guard needsRTL else { continue }
 
             // Match SwiftTerm's row positioning (non-flipped: Y=0 at bottom)
             // Our `row` is 0-based visible row (getLine handles yDisp internally)
@@ -89,17 +82,30 @@ class BiDiOverlayView: NSView {
             let lineOffset = cellHeight * CGFloat(row + 1)
             let lineOriginY = bounds.height - lineOffset
 
-            // Draw opaque background to cover SwiftTerm's LTR rendering
+            // First: draw a single full-width opaque rect to completely cover
+            // SwiftTerm's LTR rendering. No gaps, no sub-pixel bleed.
+            let defaultBg = terminalView.nativeBackgroundColor ?? NSColor.black
+            context.setFillColor(defaultBg.cgColor)
+            context.fill(CGRect(
+                x: 0,
+                y: lineOriginY,
+                width: bounds.width,
+                height: cellHeight
+            ))
+
+            // Then: draw per-cell colored backgrounds on top (only non-default)
             for col in 0..<cols {
                 let charData = line[col]
                 let bgColor = nsColor(from: charData.attribute.bg, isForeground: false)
-                context.setFillColor(bgColor.cgColor)
-                context.fill(CGRect(
-                    x: CGFloat(col) * cellWidth,
-                    y: lineOriginY,
-                    width: cellWidth,
-                    height: cellHeight
-                ))
+                if bgColor != defaultBg {
+                    context.setFillColor(bgColor.cgColor)
+                    context.fill(CGRect(
+                        x: CGFloat(col) * cellWidth,
+                        y: lineOriginY,
+                        width: cellWidth + 1, // +1 to prevent sub-pixel gaps
+                        height: cellHeight
+                    ))
+                }
             }
 
             // Build attributed string with per-character styling
