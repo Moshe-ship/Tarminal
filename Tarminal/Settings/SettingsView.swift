@@ -14,9 +14,6 @@ struct SettingsView: View {
     @AppStorage("optionAsMeta") private var optionAsMeta: Bool = false
     @AppStorage("useMetalRenderer") private var useMetalRenderer: Bool = true
 
-    // Arabic / BiDi
-    @AppStorage("bidiMode") private var bidiMode: String = "ltr"
-
     // System
     @AppStorage("confirmClose") private var confirmClose: Bool = true
     @AppStorage("bellSound") private var bellSound: Bool = true
@@ -29,10 +26,6 @@ struct SettingsView: View {
             appearanceTab
                 .tabItem { Label("Appearance", systemImage: "paintbrush") }
                 .tag("appearance")
-
-            arabicTab
-                .tabItem { Label("Arabic عربي", systemImage: "textformat") }
-                .tag("arabic")
 
             terminalTab
                 .tabItem { Label("Terminal", systemImage: "terminal") }
@@ -135,77 +128,6 @@ struct SettingsView: View {
                             ),
                             in: 10...28, step: 1)
                 }
-            }
-        }
-        .padding()
-    }
-
-    // MARK: - Arabic Tab
-
-    private var arabicTab: some View {
-        Form {
-            Section("Arabic Text") {
-                Picker("Arabic Font", selection: Binding(
-                    get: { themeManager.currentTheme.arabicFontName },
-                    set: { newFont in
-                        var theme = themeManager.currentTheme
-                        theme.arabicFontName = newFont
-                        themeManager.selectTheme(theme)
-                    }
-                )) {
-                    Text("Geeza Pro").tag("GeezaPro")
-                    Text("SF Arabic").tag(".SFArabic-Regular")
-                    Text("Baghdad").tag("Baghdad")
-                    Text("KufiStandardGK").tag("KufiStandardGK")
-                    Text("Noto Naskh Arabic").tag("NotoNaskhArabic")
-                }
-
-                Picker("BiDi Mode", selection: $bidiMode) {
-                    Text("Off (standard terminal)").tag("ltr")
-                    Text("Auto-detect RTL lines").tag("auto")
-                    Text("Force all lines RTL").tag("rtl")
-                }
-            }
-
-            Section("Direction Behavior") {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label {
-                        Text("**Auto**: Lines with Arabic/Hebrew render right-to-left. Pure Latin lines stay left-to-right.")
-                    } icon: {
-                        Image(systemName: "text.alignright")
-                            .foregroundColor(.green)
-                    }
-
-                    Label {
-                        Text("**Always RTL**: All non-empty lines render right-to-left regardless of content.")
-                    } icon: {
-                        Image(systemName: "arrow.left")
-                            .foregroundColor(.orange)
-                    }
-
-                    Label {
-                        Text("**Always LTR**: BiDi overlay disabled. Standard terminal behavior.")
-                    } icon: {
-                        Image(systemName: "arrow.right")
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .font(.caption)
-                .foregroundColor(.secondary)
-            }
-
-            Section("Preview") {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("مرحبا بالعالم — Hello World")
-                        .font(.system(.body, design: .monospaced))
-                    Text("echo \"ترمنال يعمل بشكل صحيح\"")
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundColor(.green)
-                }
-                .padding(8)
-                .background(themeManager.currentTheme.background.color)
-                .foregroundColor(themeManager.currentTheme.foreground.color)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
             }
         }
         .padding()
