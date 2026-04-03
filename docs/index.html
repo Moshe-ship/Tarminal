@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tarminal ترمنال — The first terminal that speaks Arabic</title>
-<meta name="description" content="Native macOS terminal with proper Arabic RTL text support. Connected letters, bidirectional text, tab groups, drag & drop, open source.">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Tarminal ترمنال — Native macOS terminal with Arabic support</title>
+<meta name="description" content="Native macOS terminal that renders Arabic letters correctly. Metal GPU, tab groups, drag & drop, session restore. Open source.">
 <meta property="og:title" content="Tarminal ترمنال">
-<meta property="og:description" content="The first terminal that speaks Arabic. 440 million speakers. Zero proper terminals. Until now.">
+<meta property="og:description" content="Native macOS terminal with Arabic support. Metal GPU rendering, tab groups, session restore. Open source.">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,33 +33,24 @@
     color: var(--text);
     font-family: var(--mono);
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
 
-  /* Scanline texture */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 255, 65, 0.008) 2px,
-      rgba(0, 255, 65, 0.008) 4px
-    );
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.008) 2px, rgba(0,255,65,0.008) 4px);
     pointer-events: none;
     z-index: 1000;
   }
 
-  /* Radial glow behind terminal */
   .glow {
     position: fixed;
-    width: 600px;
-    height: 600px;
+    width: 600px; height: 600px;
     border-radius: 50%;
     background: radial-gradient(circle, var(--green-glow) 0%, transparent 70%);
-    top: 40%;
-    left: 50%;
+    top: 40%; left: 50%;
     transform: translate(-50%, -55%);
     pointer-events: none;
     animation: breathe 6s ease-in-out infinite;
@@ -84,19 +75,15 @@
   }
 
   .brand {
-    display: flex;
-    align-items: baseline;
-    gap: 14px;
+    display: flex; align-items: baseline; gap: 14px;
     margin-bottom: 10px;
     animation: fadeDown 1s ease-out both;
   }
 
   .brand-letter {
     font-family: var(--arabic);
-    font-size: 42px;
-    font-weight: 800;
-    color: var(--green);
-    line-height: 1;
+    font-size: 42px; font-weight: 800;
+    color: var(--green); line-height: 1;
     text-shadow: 0 0 40px var(--green-glow), 0 0 80px rgba(0,255,65,0.08);
     animation: pulse-letter 4s ease-in-out infinite;
   }
@@ -107,40 +94,30 @@
   }
 
   .brand-name {
-    font-size: 15px;
-    font-weight: 300;
-    letter-spacing: 8px;
-    text-transform: uppercase;
+    font-size: 15px; font-weight: 300;
+    letter-spacing: 8px; text-transform: uppercase;
     color: var(--text-dim);
   }
 
   .tagline {
-    font-size: 13px;
-    font-weight: 400;
-    color: var(--text-dim);
-    letter-spacing: 1px;
-    margin-bottom: 36px;
+    font-size: 13px; font-weight: 400;
+    color: var(--text-dim); letter-spacing: 1px;
+    margin-bottom: 36px; text-align: center;
     animation: fadeDown 1s ease-out 0.15s both;
   }
 
   /* Terminal mockup */
   .terminal {
-    width: 620px;
+    width: min(620px, 92vw);
     background: var(--surface);
     border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 10px;
-    overflow: hidden;
-    box-shadow:
-      0 0 0 1px rgba(0,255,65,0.03),
-      0 20px 60px rgba(0,0,0,0.6),
-      0 0 120px rgba(0,255,65,0.03);
+    border-radius: 10px; overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(0,255,65,0.03), 0 20px 60px rgba(0,0,0,0.6), 0 0 120px rgba(0,255,65,0.03);
     animation: floatUp 1s ease-out 0.3s both;
   }
 
   .terminal-bar {
-    display: flex;
-    align-items: center;
-    gap: 7px;
+    display: flex; align-items: center; gap: 7px;
     padding: 12px 16px;
     background: rgba(255,255,255,0.02);
     border-bottom: 1px solid rgba(255,255,255,0.04);
@@ -152,39 +129,30 @@
   .dot-g { background: #28c840; }
 
   .terminal-tabs {
-    display: flex;
-    gap: 1px;
-    margin-left: 12px;
-    flex: 1;
+    display: flex; gap: 1px; margin-left: 12px; flex: 1;
   }
 
   .terminal-tab {
-    font-size: 10px;
-    padding: 3px 12px;
-    border-radius: 4px;
-    color: #555;
+    font-size: 10px; padding: 3px 12px;
+    border-radius: 4px; color: #555;
     background: rgba(255,255,255,0.03);
+    white-space: nowrap;
   }
 
   .terminal-tab.active {
-    color: #aaa;
-    background: rgba(255,255,255,0.08);
+    color: #aaa; background: rgba(255,255,255,0.08);
     border-bottom: 1px solid var(--green-dim);
   }
 
   .terminal-tab .tab-dot {
-    display: inline-block;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    margin-right: 4px;
-    vertical-align: middle;
+    display: inline-block; width: 5px; height: 5px;
+    border-radius: 50%; margin-right: 4px; vertical-align: middle;
   }
 
   .terminal-body {
     padding: 20px 22px 24px;
-    font-size: 13.5px;
-    line-height: 1.8;
+    font-size: 13.5px; line-height: 1.8;
+    overflow-x: auto;
   }
 
   .prompt { color: var(--green-dim); }
@@ -192,88 +160,57 @@
   .output { color: #888; }
   .arabic-text {
     font-family: var(--arabic);
-    color: var(--green);
-    font-size: 15px;
-    direction: rtl;
-    display: inline;
+    color: var(--green); font-size: 15px;
+    direction: rtl; display: inline;
   }
   .cursor {
-    display: inline-block;
-    width: 8px;
-    height: 15px;
-    background: var(--green);
-    vertical-align: text-bottom;
-    margin-left: 2px;
-    animation: blink 1.2s step-end infinite;
+    display: inline-block; width: 8px; height: 15px;
+    background: var(--green); vertical-align: text-bottom;
+    margin-left: 2px; animation: blink 1.2s step-end infinite;
   }
 
   @keyframes blink { 50% { opacity: 0; } }
 
-  /* Stat line */
   .stat {
-    margin-top: 28px;
-    font-size: 12px;
-    color: #444;
-    letter-spacing: 0.5px;
+    margin-top: 28px; font-size: 12px;
+    color: #444; letter-spacing: 0.5px;
     animation: fadeDown 1s ease-out 0.5s both;
-    text-align: center;
+    text-align: center; padding: 0 16px;
   }
-  .stat em {
-    font-style: normal;
-    color: var(--green-dim);
-  }
+  .stat em { font-style: normal; color: var(--green-dim); }
 
-  /* Pills */
   .pills {
-    display: flex;
-    gap: 8px;
-    margin-top: 20px;
+    display: flex; gap: 8px; margin-top: 20px;
     animation: fadeDown 1s ease-out 0.6s both;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-wrap: wrap; justify-content: center;
+    padding: 0 16px;
   }
 
   .pill {
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 0.8px;
+    font-size: 10px; font-weight: 500; letter-spacing: 0.8px;
     padding: 4px 12px;
-    border: 1px solid rgba(0,255,65,0.12);
-    border-radius: 100px;
-    color: var(--green-dim);
-    background: var(--green-faint);
+    border: 1px solid rgba(0,255,65,0.12); border-radius: 100px;
+    color: var(--green-dim); background: var(--green-faint);
+    white-space: nowrap;
   }
 
-  .pill.new {
-    border-color: rgba(0,255,65,0.3);
-    background: rgba(0,255,65,0.08);
-  }
-
-  /* CTA buttons */
+  /* CTA */
   .cta-row {
-    display: flex;
-    gap: 12px;
-    margin-top: 32px;
+    display: flex; gap: 12px; margin-top: 32px;
     animation: fadeDown 1s ease-out 0.75s both;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-wrap: wrap; justify-content: center;
+    padding: 0 16px;
   }
 
   .cta-primary {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
+    display: inline-flex; align-items: center; gap: 10px;
     padding: 12px 32px;
-    background: var(--green);
-    color: var(--void);
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-decoration: none;
-    border-radius: 6px;
-    transition: all 0.2s;
+    background: var(--green); color: var(--void);
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    letter-spacing: 1px; text-decoration: none;
+    border-radius: 6px; transition: all 0.2s;
     box-shadow: 0 0 30px rgba(0,255,65,0.2);
+    white-space: nowrap;
   }
 
   .cta-primary:hover {
@@ -283,20 +220,13 @@
   }
 
   .cta-secondary {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+    display: inline-flex; align-items: center; gap: 8px;
     padding: 12px 24px;
-    background: transparent;
-    color: var(--green-dim);
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: 1px;
-    text-decoration: none;
-    border-radius: 6px;
-    border: 1px solid rgba(0,255,65,0.2);
-    transition: all 0.2s;
+    background: transparent; color: var(--green-dim);
+    font-family: var(--mono); font-size: 13px; font-weight: 500;
+    letter-spacing: 1px; text-decoration: none;
+    border-radius: 6px; border: 1px solid rgba(0,255,65,0.2);
+    transition: all 0.2s; white-space: nowrap;
   }
 
   .cta-secondary:hover {
@@ -304,46 +234,29 @@
     background: rgba(0,255,65,0.04);
   }
 
-  .cta-arrow {
-    font-size: 16px;
-    transition: transform 0.2s;
-  }
-
-  .cta-primary:hover .cta-arrow { transform: translateX(3px); }
-
   .cta-sub {
     margin-top: 12px;
-    font-family: var(--arabic);
-    font-size: 12px;
-    color: #333;
-    direction: rtl;
+    font-family: var(--arabic); font-size: 12px;
+    color: #333; direction: rtl;
     animation: fadeDown 1s ease-out 0.9s both;
   }
 
   .version-tag {
-    margin-top: 8px;
-    font-size: 10px;
-    color: #333;
-    letter-spacing: 1px;
+    margin-top: 8px; font-size: 10px;
+    color: #333; letter-spacing: 1px;
   }
 
-  /* === FEATURES SECTION === */
+  /* === FEATURES === */
   .features {
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 80px 20px 100px;
-    position: relative;
-    z-index: 10;
+    width: 100%; max-width: 900px;
+    margin: 0 auto; padding: 80px 20px 100px;
+    position: relative; z-index: 10;
   }
 
   .features-title {
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: var(--green-dim);
-    text-align: center;
+    font-size: 11px; font-weight: 500;
+    letter-spacing: 4px; text-transform: uppercase;
+    color: var(--green-dim); text-align: center;
     margin-bottom: 48px;
   }
 
@@ -353,136 +266,123 @@
     gap: 1px;
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.04);
-    border-radius: 8px;
-    overflow: hidden;
+    border-radius: 8px; overflow: hidden;
   }
 
   .feature {
-    padding: 28px 24px;
-    background: var(--surface);
+    padding: 28px 24px; background: var(--surface);
   }
 
   .feature-icon {
-    font-size: 18px;
-    margin-bottom: 12px;
-    display: block;
-    color: var(--green-dim);
-    opacity: 0.7;
+    font-size: 16px; margin-bottom: 12px; display: block;
+    color: var(--green-dim); opacity: 0.7;
   }
 
   .feature-name {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    color: #ddd;
-    margin-bottom: 6px;
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 0.5px; color: #ddd; margin-bottom: 6px;
   }
 
   .feature-desc {
-    font-size: 11px;
-    color: #666;
-    line-height: 1.5;
-  }
-
-  .feature-new {
-    display: inline-block;
-    font-size: 8px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    padding: 1px 5px;
-    background: rgba(0,255,65,0.12);
-    color: var(--green-dim);
-    border-radius: 3px;
-    margin-left: 6px;
-    vertical-align: middle;
+    font-size: 11px; color: #666; line-height: 1.5;
   }
 
   /* === FOOTER === */
   .footer {
-    width: 100%;
-    padding: 40px 20px;
+    width: 100%; padding: 40px 20px;
     text-align: center;
     border-top: 1px solid rgba(255,255,255,0.03);
-    position: relative;
-    z-index: 10;
+    position: relative; z-index: 10;
   }
 
-  .footer-text {
-    font-size: 10px;
-    color: #333;
-    letter-spacing: 1px;
-  }
+  .footer-text { font-size: 10px; color: #333; letter-spacing: 1px; }
 
   .footer-arabic {
-    font-family: var(--arabic);
-    font-size: 11px;
-    color: #282828;
-    margin-top: 6px;
-    direction: rtl;
+    font-family: var(--arabic); font-size: 11px;
+    color: #282828; margin-top: 6px; direction: rtl;
   }
 
   /* Animations */
-  @keyframes fadeDown {
-    from { opacity: 0; transform: translateY(-12px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes floatUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes floatUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
 
   /* Corner markers */
   .corner { position: fixed; pointer-events: none; z-index: 5; }
   .corner-tl { top: 24px; left: 24px; }
   .corner-br { bottom: 24px; right: 24px; }
-  .corner span {
-    display: block;
-    font-size: 9px;
-    letter-spacing: 2px;
-    color: #222;
-  }
-  .corner-br span {
-    text-align: right;
-    font-family: var(--arabic);
-    letter-spacing: 0;
-  }
+  .corner span { display: block; font-size: 9px; letter-spacing: 2px; color: #222; }
+  .corner-br span { text-align: right; font-family: var(--arabic); letter-spacing: 0; }
 
-  /* Responsive */
+  /* === RESPONSIVE === */
+
+  /* Tablet */
   @media (max-width: 768px) {
-    .terminal { width: 88vw; }
     .brand-letter { font-size: 36px; }
     .brand-name { font-size: 13px; letter-spacing: 6px; }
-    .stat { font-size: 11px; padding: 0 20px; }
     .corner { display: none; }
-    .features-grid { grid-template-columns: 1fr; }
-    .terminal-tabs { display: none; }
+    .features-grid { grid-template-columns: repeat(2, 1fr); }
+    .terminal-tabs { overflow: hidden; }
+    .terminal-tab:last-child { display: none; }
   }
 
+  /* Phone */
   @media (max-width: 480px) {
-    .hero { padding: 24px 16px; }
-    .terminal { width: 94vw; }
-    .terminal-body { font-size: 11.5px; padding: 14px 16px 18px; }
+    .hero { padding: 24px 12px; min-height: auto; padding-top: 60px; padding-bottom: 40px; }
+    .terminal-body { font-size: 11px; padding: 14px 14px 18px; line-height: 1.7; }
     .brand { gap: 10px; margin-bottom: 8px; }
-    .brand-letter { font-size: 30px; }
-    .brand-name { font-size: 11px; letter-spacing: 4px; }
-    .tagline { font-size: 11px; margin-bottom: 24px; }
-    .arabic-text { font-size: 13px !important; }
-    .stat { font-size: 10.5px; margin-top: 20px; line-height: 1.6; }
-    .pills { gap: 6px; margin-top: 14px; }
-    .pill { font-size: 9px; padding: 3px 10px; }
-    .cta-row { margin-top: 24px; }
-    .cta-primary { padding: 10px 24px; font-size: 12px; }
-    .cta-secondary { padding: 10px 18px; font-size: 11px; }
-    .cta-sub { font-size: 11px; }
-    .glow { width: 300px; height: 300px; }
-    .features { padding: 60px 16px 80px; }
+    .brand-letter { font-size: 28px; }
+    .brand-name { font-size: 10px; letter-spacing: 4px; }
+    .tagline { font-size: 11px; margin-bottom: 20px; }
+    .arabic-text { font-size: 12px !important; }
+    .stat { font-size: 10px; margin-top: 16px; line-height: 1.6; }
+    .pills { gap: 5px; margin-top: 12px; }
+    .pill { font-size: 8px; padding: 3px 8px; }
+    .cta-row { flex-direction: column; align-items: center; margin-top: 20px; gap: 10px; }
+    .cta-primary { width: 100%; max-width: 280px; justify-content: center; padding: 12px 20px; font-size: 12px; }
+    .cta-secondary { width: 100%; max-width: 280px; justify-content: center; padding: 10px 16px; font-size: 11px; }
+    .cta-sub { font-size: 10px; }
+    .version-tag { font-size: 9px; }
+    .glow { width: 250px; height: 250px; }
+    .features { padding: 48px 12px 60px; }
+    .features-grid { grid-template-columns: 1fr; }
+    .features-title { margin-bottom: 24px; font-size: 10px; }
+    .feature { padding: 20px 18px; }
+    .terminal-tabs { display: none; }
+    .terminal-bar { padding: 10px 14px; }
+    .dot { width: 9px; height: 9px; }
   }
 
+  /* Small phone (iPhone SE, mini) */
+  @media (max-width: 375px) {
+    .hero { padding-top: 40px; }
+    .brand-letter { font-size: 24px; }
+    .brand-name { font-size: 9px; letter-spacing: 3px; }
+    .tagline { font-size: 10px; }
+    .terminal-body { font-size: 10px; padding: 10px 12px 14px; }
+    .stat { font-size: 9px; }
+  }
+
+  /* Landscape phone */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .hero { min-height: auto; padding: 20px 16px; }
+    .glow { display: none; }
+    .stat { margin-top: 12px; }
+    .pills { margin-top: 8px; }
+    .cta-row { margin-top: 12px; }
+  }
+
+  /* Safe area for notched phones */
   @supports (padding: env(safe-area-inset-top)) {
     .hero {
-      padding-top: env(safe-area-inset-top);
-      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: max(12px, env(safe-area-inset-left));
+      padding-right: max(12px, env(safe-area-inset-right));
+    }
+    .features {
+      padding-left: max(12px, env(safe-area-inset-left));
+      padding-right: max(12px, env(safe-area-inset-right));
+    }
+    .footer {
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
     }
   }
 </style>
@@ -494,7 +394,6 @@
 <div class="corner corner-tl"><span>v0.3.0</span></div>
 <div class="corner corner-br"><span>مفتوح المصدر</span></div>
 
-<!-- HERO -->
 <section class="hero">
 
   <div class="brand">
@@ -502,7 +401,7 @@
     <span class="brand-name">Tarminal</span>
   </div>
 
-  <div class="tagline">The first terminal that speaks Arabic</div>
+  <div class="tagline">Native macOS terminal with Arabic support</div>
 
   <div class="terminal">
     <div class="terminal-bar">
@@ -520,104 +419,101 @@
       <div><span class="output">hello from tarminal</span></div>
       <div><span class="prompt">~</span> <span class="cmd">echo "<span class="arabic-text">مرحبا يا صاحبي</span>"</span></div>
       <div><span class="arabic-text" style="color:#888;">مرحبا يا صاحبي</span></div>
-      <div><span class="prompt">~</span> <span class="arabic-text" style="color:#00cc33; font-size:13px;">أول طرفية تتكلم عربي</span> <span class="cursor"></span></div>
+      <div><span class="prompt">~</span> <span class="cmd">claude</span> <span class="cursor"></span></div>
     </div>
   </div>
 
   <div class="stat">
-    <em>440 million</em> Arabic speakers. Zero proper terminals. <em>Until now.</em>
+    <em>Metal GPU</em> rendered. Connected Arabic letters. <em>Session restore.</em>
   </div>
 
   <div class="pills">
-    <span class="pill">RTL Rendering</span>
-    <span class="pill">Connected Letters</span>
-    <span class="pill">Native macOS</span>
-    <span class="pill new">Tab Groups</span>
-    <span class="pill new">Drag & Drop</span>
+    <span class="pill">Connected Arabic</span>
+    <span class="pill">Metal GPU</span>
+    <span class="pill">Tab Groups</span>
+    <span class="pill">Drag & Drop</span>
+    <span class="pill">Session Restore</span>
     <span class="pill">Open Source</span>
   </div>
 
   <div class="cta-row">
     <a class="cta-primary" href="https://github.com/Moshe-ship/Tarminal/releases">
-      Download v0.3.0
-      <span class="cta-arrow">&darr;</span>
+      Download v0.3.0 ↓
     </a>
     <a class="cta-secondary" href="https://github.com/Moshe-ship/Tarminal">
-      View Source &rarr;
+      View Source →
     </a>
   </div>
 
-  <div class="cta-sub">حمّل مجاناً &mdash; مفتوح المصدر</div>
-  <div class="version-tag">macOS 14+ &middot; Apple Silicon &middot; MIT License</div>
+  <div class="cta-sub">حمّل مجاناً — مفتوح المصدر</div>
+  <div class="version-tag">macOS 14+ · Apple Silicon · MIT License</div>
 
 </section>
 
-<!-- FEATURES -->
 <section class="features">
 
   <div class="features-title">What's inside</div>
 
   <div class="features-grid">
     <div class="feature">
-      <span class="feature-icon">&rlm;</span>
-      <div class="feature-name">RTL BiDi Rendering</div>
-      <div class="feature-desc">Core Text overlay re-renders Arabic and Hebrew lines right-to-left with full Unicode BiDi Algorithm support.</div>
+      <div class="feature-icon">ع</div>
+      <div class="feature-name">Arabic Letters</div>
+      <div class="feature-desc">Connected letter forms via Core Text. Initial, medial, final — renders properly unlike iTerm2, Ghostty, or Alacritty.</div>
     </div>
 
     <div class="feature">
-      <span class="feature-icon">&laquo;</span>
-      <div class="feature-name">Connected Letters</div>
-      <div class="feature-desc">Arabic letters connect properly. Initial, medial, final forms. Not broken rectangles like every other terminal.</div>
+      <div class="feature-icon">◆</div>
+      <div class="feature-name">Metal GPU</div>
+      <div class="feature-desc">Hardware-accelerated rendering on Apple Silicon. Smooth scrolling, low CPU, native performance.</div>
     </div>
 
     <div class="feature">
-      <span class="feature-icon">&square;</span>
-      <div class="feature-name">Tab Groups <span class="feature-new">NEW</span></div>
-      <div class="feature-desc">Color-coded tab groups. Right-click to assign colors. Drag tabs to reorder. Cmd+1-9 to switch.</div>
+      <div class="feature-icon">◫</div>
+      <div class="feature-name">Tab Groups</div>
+      <div class="feature-desc">Color-coded tabs. Drag to reorder. Right-click to assign colors. Cmd+1-9 to switch. Tabs persist on switch.</div>
     </div>
 
     <div class="feature">
-      <span class="feature-icon">&darr;</span>
-      <div class="feature-name">Drag & Drop <span class="feature-new">NEW</span></div>
-      <div class="feature-desc">Drop files and images onto the terminal. Paths are auto-escaped and pasted at the cursor.</div>
+      <div class="feature-icon">↓</div>
+      <div class="feature-name">Drag & Drop</div>
+      <div class="feature-desc">Drop files onto the terminal. Paths are auto-escaped and pasted at the cursor position.</div>
     </div>
 
     <div class="feature">
-      <span class="feature-icon">&para;</span>
-      <div class="feature-name">Find in Scrollback <span class="feature-new">NEW</span></div>
-      <div class="feature-desc">Cmd+F to search terminal output. Cmd+G / Cmd+Shift+G to navigate matches.</div>
+      <div class="feature-icon">⟳</div>
+      <div class="feature-name">Session Restore</div>
+      <div class="feature-desc">Quit and relaunch — your tabs, directories, and colors come back exactly where you left off.</div>
     </div>
 
     <div class="feature">
-      <span class="feature-icon">&sect;</span>
+      <div class="feature-icon">⌘F</div>
+      <div class="feature-name">Find in Scrollback</div>
+      <div class="feature-desc">Cmd+F to search terminal output. Cmd+G to find next, Cmd+Shift+G for previous.</div>
+    </div>
+
+    <div class="feature">
+      <div class="feature-icon">◑</div>
       <div class="feature-name">5 Themes</div>
-      <div class="feature-desc">Tarminal Dark, Light, Dracula, Nord, and Sarab. Window transparency with vibrancy. All ANSI colors.</div>
+      <div class="feature-desc">Dark, Light, Dracula, Nord, Sarab. Window transparency with vibrancy. Full ANSI 256 colors.</div>
     </div>
 
     <div class="feature">
-      <span class="feature-icon">&Cedilla;</span>
-      <div class="feature-name">All Settings Wired</div>
-      <div class="feature-desc">Cursor style, blink, scrollback buffer, bell control, Option-as-Meta, BiDi mode. Every toggle does what it says.</div>
+      <div class="feature-icon">⚙</div>
+      <div class="feature-name">Every Setting Works</div>
+      <div class="feature-desc">Cursor style, blink, scrollback, bell, dock bounce, Option-as-Meta, title bar. No fake toggles.</div>
     </div>
 
     <div class="feature">
-      <span class="feature-icon">&gt;</span>
+      <div class="feature-icon">&gt;_</div>
       <div class="feature-name">Full Terminal</div>
-      <div class="feature-desc">zsh, bash, fish. VT100/xterm emulation via SwiftTerm. Clickable URLs. Sixel & iTerm2 image protocol support.</div>
-    </div>
-
-    <div class="feature">
-      <span class="feature-icon">&empty;</span>
-      <div class="feature-name">Open Source</div>
-      <div class="feature-desc">MIT licensed. Swift + SwiftUI. Built on SwiftTerm. Fork it, extend it, make it yours.</div>
+      <div class="feature-desc">zsh, bash, fish. VT100/xterm via SwiftTerm. Clickable URLs. Works with Claude Code, vim, htop — everything.</div>
     </div>
   </div>
 
 </section>
 
-<!-- FOOTER -->
 <footer class="footer">
-  <div class="footer-text">TARMINAL v0.3.0 &middot; MIT LICENSE &middot; BUILT WITH SWIFTTERM</div>
+  <div class="footer-text">TARMINAL v0.3.0 · MIT LICENSE · BUILT WITH SWIFTTERM</div>
   <div class="footer-arabic">صُنع بحب للمطورين العرب</div>
 </footer>
 
