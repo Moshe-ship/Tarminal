@@ -3,6 +3,7 @@ import SwiftTerm
 
 struct TerminalContainerView: NSViewRepresentable {
     let tab: TerminalTab
+    weak var tabManager: TabManager?
     @ObservedObject var themeManager = ThemeManager.shared
     @AppStorage("opacity") private var opacity: Double = 1.0
     @AppStorage("cursorStyle") private var cursorStyle: String = "block"
@@ -48,6 +49,7 @@ struct TerminalContainerView: NSViewRepresentable {
         container.addSubview(terminalView)
 
         context.coordinator.terminalView = terminalView
+        context.coordinator.tabManager = tabManager
         container.coordinator = context.coordinator
 
         DispatchQueue.main.async {
@@ -147,6 +149,7 @@ struct TerminalContainerView: NSViewRepresentable {
 
     class Coordinator: NSObject, LocalProcessTerminalViewDelegate {
         let tab: TerminalTab
+        weak var tabManager: TabManager?
         var terminalView: TarminalTerminalView?
         var vibrancyView: NSVisualEffectView?
         var titleBarStyle: String = "directory"
@@ -165,6 +168,13 @@ struct TerminalContainerView: NSViewRepresentable {
             DispatchQueue.main.async { [self] in
                 let t = title.isEmpty ? "zsh" : title
                 self.tab.title = t
+                self.terminalView?.tabTitle = t
+
+                // Mark activity on background tabs
+                if let tabManager = self.tabManager, tabManager.selectedTabId != self.tab.id {
+                    self.tab.hasActivity = true
+                }
+
                 switch self.titleBarStyle {
                 case "shell": source.window?.title = t
                 case "directory": source.window?.title = (self.tab.workingDirectory as NSString).lastPathComponent.isEmpty ? t : (self.tab.workingDirectory as NSString).lastPathComponent
@@ -186,7 +196,10 @@ struct TerminalContainerView: NSViewRepresentable {
         }
 
         func processTerminated(source: TerminalView, exitCode: Int32?) {
-            DispatchQueue.main.async { self.tab.isTerminated = true }
+            DispatchQueue.main.async {
+                self.tab.isTerminated = true
+                NotificationManager.shared.notifyProcessFinished(tabTitle: self.tab.displayTitle)
+            }
         }
     }
 }

@@ -28,9 +28,15 @@ struct ContentView: View {
                     .background(Color.black)
                 } else {
                     ForEach(tabManager.tabs) { tab in
-                        TerminalContainerView(tab: tab)
+                        TerminalContainerView(tab: tab, tabManager: tabManager)
                             .opacity(tab.id == tabManager.selectedTabId ? 1 : 0)
                             .allowsHitTesting(tab.id == tabManager.selectedTabId)
+                            .onChange(of: tabManager.selectedTabId) { _ in
+                                // Clear activity when tab is selected
+                                if tab.id == tabManager.selectedTabId {
+                                    tab.hasActivity = false
+                                }
+                            }
                     }
                 }
             }

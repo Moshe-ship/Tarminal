@@ -159,17 +159,21 @@ struct TabItemView: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            // Color dot
+            // Color dot or activity indicator
             if let color = effectiveColor {
                 Circle()
                     .fill(color)
                     .frame(width: 7, height: 7)
+            } else if tab.hasActivity && !isSelected {
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: 5, height: 5)
             }
 
             // Tab number
             Text("\(index)")
                 .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                .foregroundColor(isSelected ? .green.opacity(0.7) : .white.opacity(0.2))
+                .foregroundColor(isSelected ? .green.opacity(0.7) : (tab.hasActivity ? .blue.opacity(0.7) : .white.opacity(0.2)))
                 .frame(width: 14)
 
             // Tab title

@@ -13,6 +13,9 @@ struct TarminalApp: App {
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
                     tabManager.saveSession()
                 }
+                .onAppear {
+                    NotificationManager.shared.requestPermission()
+                }
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified(showsTitle: false))
