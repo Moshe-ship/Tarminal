@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Kufi+Arabic:wght@400;600;700;800&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1200px;height:675px;overflow:hidden;background:#06060a;font-family:'JetBrains Mono',monospace;color:#e0e0e0}
+
+  .card{width:1200px;height:675px;padding:44px 52px;display:flex;flex-direction:column;justify-content:space-between;position:relative;z-index:10}
+
+  body::after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(0,255,65,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,65,.015) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:1}
+
+  .top{display:flex;justify-content:space-between;align-items:flex-start}
+  .tag{font-size:9px;font-weight:600;letter-spacing:1.5px;color:#00ff41;text-transform:uppercase;opacity:.6}
+
+  h1{font-size:24px;font-weight:700;color:#fff;margin:14px 0 24px;letter-spacing:-.5px}
+  h1 span{color:#00ff41}
+
+  /* Architecture diagram */
+  .arch{display:flex;flex-direction:column;gap:0;width:100%}
+  .layer{display:flex;border:1px solid rgba(0,255,65,.1);border-bottom:none;background:rgba(0,255,65,.015)}
+  .layer:last-child{border-bottom:1px solid rgba(0,255,65,.1);border-radius:0 0 8px 8px}
+  .layer:first-child{border-radius:8px 8px 0 0}
+
+  .layer-left{width:240px;padding:12px 18px;border-right:1px solid rgba(0,255,65,.06);font-size:12px;font-weight:600;color:#ddd;display:flex;align-items:center}
+  .layer-right{flex:1;padding:12px 18px;font-size:11px;color:#666;display:flex;align-items:center;justify-content:space-between}
+  .layer-tag{font-size:8px;padding:2px 8px;border-radius:3px;font-weight:500;letter-spacing:.5px}
+
+  .t-new{background:rgba(0,255,65,.08);color:#00ff41;border:1px solid rgba(0,255,65,.15)}
+  .t-ext{background:rgba(100,149,237,.08);color:#6495ed;border:1px solid rgba(100,149,237,.15)}
+  .t-sys{background:rgba(255,255,255,.04);color:#666;border:1px solid rgba(255,255,255,.08)}
+
+  .arrow{text-align:center;color:#333;font-size:10px;padding:2px 0}
+
+  /* Features grid */
+  .features{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:20px}
+  .feat{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:6px;padding:10px 14px}
+  .feat-name{font-size:10px;font-weight:600;color:#fff;margin-bottom:3px}
+  .feat-desc{font-size:9px;color:#555;line-height:1.4}
+
+  .bottom{display:flex;justify-content:space-between;align-items:flex-end}
+  .tech{display:flex;gap:10px}
+  .tech-pill{font-size:9px;padding:3px 10px;border:1px solid rgba(255,255,255,.08);border-radius:100px;color:#555}
+  .url{font-size:10px;color:#333}
+
+  .bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#00ff41 0%,#6495ed 50%,#00ff41 100%);z-index:50}
+</style>
+</head>
+<body>
+<div class="card">
+  <div>
+    <div class="top">
+      <div class="tag">Architecture Deep-Dive</div>
+      <div class="tag" style="font-family:'Noto Kufi Arabic';letter-spacing:0">العمارة التقنية</div>
+    </div>
+    <h1>How <span>Tarminal</span> renders Arabic where every terminal fails</h1>
+  </div>
+
+  <div class="arch">
+    <div class="layer">
+      <div class="layer-left">SwiftUI App Shell</div>
+      <div class="layer-right">
+        Tabs, settings, themes, window management
+        <span class="layer-tag t-new">NEW CODE</span>
+      </div>
+    </div>
+    <div class="layer">
+      <div class="layer-left">BiDi Analyzer</div>
+      <div class="layer-right">
+        Detects RTL content per-line, fast-path for pure LTR
+        <span class="layer-tag t-new">NEW CODE</span>
+      </div>
+    </div>
+    <div class="layer">
+      <div class="layer-left">Font Cascade</div>
+      <div class="layer-right">
+        SF Mono (Latin) → Geeza Pro (Arabic), auto-switching
+        <span class="layer-tag t-new">NEW CODE</span>
+      </div>
+    </div>
+    <div class="layer">
+      <div class="layer-left">SwiftTerm Engine</div>
+      <div class="layer-right">
+        VT100/xterm emulation, PTY, buffer, escape sequences
+        <span class="layer-tag t-ext">LIBRARY</span>
+      </div>
+    </div>
+    <div class="layer">
+      <div class="layer-left">Core Text</div>
+      <div class="layer-right">
+        Full Unicode BiDi Algorithm + Arabic shaping + ligatures
+        <span class="layer-tag t-sys">SYSTEM</span>
+      </div>
+    </div>
+    <div class="layer">
+      <div class="layer-left">PTY / zsh</div>
+      <div class="layer-right">
+        forkpty() + execve(), user-level privileges
+        <span class="layer-tag t-sys">SYSTEM</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="features">
+    <div class="feat">
+      <div class="feat-name">Connected Letters</div>
+      <div class="feat-desc">Core Text handles initial, medial, final, isolated forms automatically</div>
+    </div>
+    <div class="feat">
+      <div class="feat-name">Cursor Mapping</div>
+      <div class="feat-desc">Logical ↔ visual position translation via CTLine index APIs</div>
+    </div>
+    <div class="feat">
+      <div class="feat-name">Fast Path</div>
+      <div class="feat-desc">Pure LTR lines skip BiDi entirely — zero overhead for English</div>
+    </div>
+    <div class="feat">
+      <div class="feat-name">Security</div>
+      <div class="feat-desc">Shell allowlist, no telemetry, minimal entitlements, branch protection</div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="tech">
+      <span class="tech-pill">Swift 5.9</span>
+      <span class="tech-pill">SwiftUI</span>
+      <span class="tech-pill">SwiftTerm 1.13</span>
+      <span class="tech-pill">Core Text</span>
+      <span class="tech-pill">macOS 14+</span>
+    </div>
+    <div class="url">github.com/Moshe-ship/Tarminal</div>
+  </div>
+</div>
+<div class="bar"></div>
+</body>
+</html>

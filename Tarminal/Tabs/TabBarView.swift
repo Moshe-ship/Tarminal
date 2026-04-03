@@ -1,4 +1,36 @@
 import SwiftUI
+import AppKit
+
+// MARK: - Colored circle images for menus (NSMenu strips SwiftUI foregroundColor)
+
+private func coloredCircleImage(_ color: NSColor, size: CGFloat = 12) -> NSImage {
+    let image = NSImage(size: NSSize(width: size, height: size))
+    image.lockFocus()
+    color.setFill()
+    NSBezierPath(ovalIn: NSRect(x: 0, y: 0, width: size, height: size)).fill()
+    image.unlockFocus()
+    image.isTemplate = false
+    return image
+}
+
+private let colorImages: [TerminalTab.TabColor: NSImage] = {
+    var map: [TerminalTab.TabColor: NSImage] = [:]
+    let nsColors: [TerminalTab.TabColor: NSColor] = [
+        .red: NSColor(red: 1.0, green: 0.27, blue: 0.23, alpha: 1),
+        .orange: NSColor(red: 1.0, green: 0.62, blue: 0.04, alpha: 1),
+        .yellow: NSColor(red: 1.0, green: 0.84, blue: 0.04, alpha: 1),
+        .green: NSColor(red: 0.16, green: 0.78, blue: 0.25, alpha: 1),
+        .blue: NSColor(red: 0.04, green: 0.52, blue: 1.0, alpha: 1),
+        .purple: NSColor(red: 0.69, green: 0.32, blue: 0.87, alpha: 1),
+        .pink: NSColor(red: 1.0, green: 0.18, blue: 0.53, alpha: 1),
+    ]
+    for (key, nsColor) in nsColors {
+        map[key] = coloredCircleImage(nsColor)
+    }
+    return map
+}()
+
+// MARK: - Tab Bar View
 
 struct TabBarView: View {
     @EnvironmentObject var tabManager: TabManager
@@ -13,7 +45,6 @@ struct TabBarView: View {
                     index: index + 1,
                     isSelected: tab.id == tabManager.selectedTabId,
                     isOnly: tabManager.tabs.count == 1,
-                    groupColor: tabManager.group(for: tab)?.color ?? .clear,
                     onSelect: { tabManager.selectTab(tab.id) },
                     onClose: { closeTabHandler(tab.id) }
                 )
@@ -30,7 +61,6 @@ struct TabBarView: View {
                     tabContextMenu(for: tab)
                 }
 
-                // Separator between tabs
                 if tab.id != tabManager.tabs.last?.id {
                     Rectangle()
                         .fill(Color.white.opacity(0.06))
@@ -40,7 +70,6 @@ struct TabBarView: View {
 
             Spacer()
 
-            // New tab button
             Button(action: { tabManager.addTab() }) {
                 Image(systemName: "plus")
                     .font(.system(size: 11, weight: .medium))
@@ -65,36 +94,26 @@ struct TabBarView: View {
 
     @ViewBuilder
     private func tabContextMenu(for tab: TerminalTab) -> some View {
-        // Group color submenu
-        Menu("Set Color") {
-            ForEach(TabGroup.groupColors, id: \.self) { color in
-                Button(action: {
-                    setTabColor(tab: tab, color: color)
-                }) {
-                    HStack {
-                        if color == .clear {
-                            Image(systemName: "xmark.circle")
-                            Text("None")
-                        } else {
-                            Image(systemName: "circle.fill")
-                                .foregroundColor(color)
-                            Text(TabGroup.colorNames[color] ?? "Color")
-                        }
-                    }
+        // Color picker with real colored NSImages that render in NSMenu
+        Menu("Tab Color") {
+            Button(action: { tab.tabColor = .none }) {
+                Label {
+                    Text("Default")
+                } icon: {
+                    Image(systemName: tab.tabColor == .none ? "checkmark.circle" : "circle")
                 }
             }
-        }
 
-        // Group assignment submenu
-        if !tabManager.groups.isEmpty {
-            Menu("Move to Group") {
-                Button("No Group") {
-                    tabManager.assignTabToGroup(tabId: tab.id, groupId: nil)
-                }
-                Divider()
-                ForEach(tabManager.groups) { group in
-                    Button(group.name) {
-                        tabManager.assignTabToGroup(tabId: tab.id, groupId: group.id)
+            Divider()
+
+            ForEach(TerminalTab.TabColor.allCases.filter { $0 != .none }, id: \.self) { tabColor in
+                Button(action: { tab.tabColor = tabColor }) {
+                    Label {
+                        Text(tabColor.displayName)
+                    } icon: {
+                        if let nsImage = colorImages[tabColor] {
+                            Image(nsImage: nsImage)
+                        }
                     }
                 }
             }
@@ -103,7 +122,7 @@ struct TabBarView: View {
         Divider()
 
         Button("New Tab") {
-            tabManager.addTab(groupId: tab.groupId)
+            tabManager.addTab()
         }
 
         if tabManager.tabs.count > 1 {
@@ -120,21 +139,6 @@ struct TabBarView: View {
             }
         }
     }
-
-    private func setTabColor(tab: TerminalTab, color: Color) {
-        if color == .clear {
-            tabManager.assignTabToGroup(tabId: tab.id, groupId: nil)
-        } else {
-            // Find or create a group with this color
-            if let existing = tabManager.groups.first(where: { $0.color == color }) {
-                tabManager.assignTabToGroup(tabId: tab.id, groupId: existing.id)
-            } else {
-                let name = TabGroup.colorNames[color] ?? "Group"
-                let group = tabManager.createGroup(name: name, color: color)
-                tabManager.assignTabToGroup(tabId: tab.id, groupId: group.id)
-            }
-        }
-    }
 }
 
 // MARK: - Tab Item View
@@ -144,22 +148,25 @@ struct TabItemView: View {
     let index: Int
     let isSelected: Bool
     let isOnly: Bool
-    let groupColor: Color
     let onSelect: () -> Void
     let onClose: () -> Void
 
     @State private var isHovering = false
 
+    private var effectiveColor: Color? {
+        tab.tabColor.color
+    }
+
     var body: some View {
         HStack(spacing: 6) {
-            // Group color dot
-            if groupColor != .clear {
+            // Color dot
+            if let color = effectiveColor {
                 Circle()
-                    .fill(groupColor)
-                    .frame(width: 6, height: 6)
+                    .fill(color)
+                    .frame(width: 7, height: 7)
             }
 
-            // Tab number indicator
+            // Tab number
             Text("\(index)")
                 .font(.system(size: 9, weight: .semibold, design: .monospaced))
                 .foregroundColor(isSelected ? .green.opacity(0.7) : .white.opacity(0.2))
@@ -174,7 +181,7 @@ struct TabItemView: View {
 
             Spacer(minLength: 4)
 
-            // Close button (show on hover or selected, hide if only tab)
+            // Close button
             if !isOnly && (isHovering || isSelected) {
                 Button(action: onClose) {
                     Image(systemName: "xmark")
@@ -191,31 +198,40 @@ struct TabItemView: View {
         }
         .padding(.horizontal, 12)
         .frame(minWidth: 120, maxWidth: 200, maxHeight: .infinity)
-        .background(
-            isSelected
-                ? Color(nsColor: NSColor(white: 0.16, alpha: 1))
-                : isHovering
-                    ? Color(nsColor: NSColor(white: 0.12, alpha: 1))
-                    : Color.clear
-        )
+        .background(tabBackground)
         .overlay(
-            // Bottom accent: group color if grouped, green if selected
             Rectangle()
                 .frame(height: 2)
-                .foregroundColor(
-                    groupColor != .clear
-                        ? groupColor.opacity(isSelected ? 0.8 : 0.4)
-                        : (isSelected ? Color.green.opacity(0.5) : .clear)
-                ),
+                .foregroundColor(bottomAccentColor),
             alignment: .bottom
         )
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
         .onHover { isHovering = $0 }
     }
+
+    private var tabBackground: Color {
+        if let color = effectiveColor, isSelected {
+            return color.opacity(0.12)
+        }
+        if isSelected {
+            return Color(nsColor: NSColor(white: 0.16, alpha: 1))
+        }
+        if isHovering {
+            return Color(nsColor: NSColor(white: 0.12, alpha: 1))
+        }
+        return .clear
+    }
+
+    private var bottomAccentColor: Color {
+        if let color = effectiveColor {
+            return color.opacity(isSelected ? 0.8 : 0.4)
+        }
+        return isSelected ? Color.green.opacity(0.5) : .clear
+    }
 }
 
-// MARK: - Drop Delegate (Tab Reorder)
+// MARK: - Drop Delegate
 
 struct TabDropDelegate: DropDelegate {
     let tabManager: TabManager

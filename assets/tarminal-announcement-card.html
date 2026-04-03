@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Kufi+Arabic:wght@400;600;700;800&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1200px;height:675px;overflow:hidden;background:#06060a;font-family:'JetBrains Mono',monospace;color:#e0e0e0}
+
+  body::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,65,.01) 2px,rgba(0,255,65,.01) 4px);pointer-events:none;z-index:100}
+
+  .card{width:1200px;height:675px;display:flex;position:relative;z-index:10}
+
+  .glow{position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(0,255,65,.07) 0%,transparent 70%);top:50%;left:35%;transform:translate(-50%,-50%);pointer-events:none}
+
+  /* Left: text */
+  .left{width:580px;padding:52px 48px;display:flex;flex-direction:column;justify-content:space-between;position:relative}
+  .left::after{content:'';position:absolute;right:0;top:52px;bottom:52px;width:1px;background:linear-gradient(to bottom,transparent,rgba(0,255,65,.15),transparent)}
+
+  .tag{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border:1px solid rgba(0,255,65,.2);border-radius:3px;font-size:9px;font-weight:600;letter-spacing:1.5px;color:#00ff41;text-transform:uppercase;width:fit-content;margin-bottom:20px;background:rgba(0,255,65,.05)}
+  .tag .dot{width:4px;height:4px;border-radius:50%;background:#00ff41}
+
+  .ta{font-family:'Noto Kufi Arabic',sans-serif;font-size:52px;font-weight:800;color:#00ff41;line-height:1;margin-bottom:6px;text-shadow:0 0 50px rgba(0,255,65,.2)}
+
+  h1{font-size:26px;font-weight:700;color:#fff;line-height:1.25;margin-bottom:14px;letter-spacing:-.5px}
+
+  .sub{font-size:12.5px;color:#555;line-height:1.6;margin-bottom:20px}
+  .sub strong{color:#888}
+
+  .stat{font-size:20px;font-weight:300;color:#333;line-height:1.4}
+  .stat em{font-style:normal;color:#00ff41;font-weight:600}
+
+  .bottom-left{display:flex;gap:16px;align-items:center}
+  .url{font-size:10px;color:#333;letter-spacing:.5px}
+  .license{font-size:9px;color:#222;border:1px solid #222;padding:2px 8px;border-radius:3px}
+
+  /* Right: terminal mockup */
+  .right{flex:1;padding:52px 40px;display:flex;flex-direction:column;justify-content:center}
+
+  .terminal{background:#0c0c10;border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 80px rgba(0,255,65,.03)}
+  .tbar{display:flex;align-items:center;gap:6px;padding:10px 14px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.04)}
+  .d{width:10px;height:10px;border-radius:50%}
+  .dr{background:#ff5f57}.dy{background:#ffbd2e}.dg{background:#28c840}
+  .ttitle{flex:1;text-align:center;font-size:10px;color:#333;margin-right:36px}
+  .tbody{padding:16px 18px;font-size:12.5px;line-height:2}
+  .pr{color:#00cc33}.cm{color:#c8c8c8}.out{color:#666}
+  .ar{font-family:'Noto Kufi Arabic',sans-serif;color:#00ff41;font-size:14px;direction:rtl;display:inline}
+  .ar-out{font-family:'Noto Kufi Arabic',sans-serif;color:#888;font-size:14px;direction:rtl;display:inline}
+  .cursor{display:inline-block;width:7px;height:14px;background:#00ff41;vertical-align:text-bottom;margin-left:2px;animation:b 1.2s step-end infinite}
+  @keyframes b{50%{opacity:0}}
+
+  /* Before/after label */
+  .compare{display:flex;gap:12px;margin-top:16px}
+  .compare-item{flex:1;text-align:center;padding:10px 0;border-radius:6px}
+  .compare-bad{background:rgba(255,95,87,.06);border:1px solid rgba(255,95,87,.12)}
+  .compare-good{background:rgba(0,255,65,.06);border:1px solid rgba(0,255,65,.12)}
+  .compare-label{font-size:8px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+  .compare-bad .compare-label{color:#ff5f57}
+  .compare-good .compare-label{color:#00ff41}
+  .compare-text{font-family:'Noto Kufi Arabic',sans-serif;font-size:13px;direction:rtl}
+  .compare-bad .compare-text{color:#ff5f57;letter-spacing:4px}
+  .compare-good .compare-text{color:#00ff41}
+
+  .bar{position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#00ff41,#00cc33,#009922,#00ff41);z-index:50}
+</style>
+</head>
+<body>
+<div class="glow"></div>
+
+<div class="card">
+  <div class="left">
+    <div>
+      <div class="tag"><div class="dot"></div> Open Source</div>
+      <div class="ta">ت</div>
+      <h1>Tarminal<br><span style="font-weight:300;color:#666">The first terminal<br>that speaks Arabic</span></h1>
+      <p class="sub">Native macOS app. <strong>Not Electron.</strong><br>Arabic text with connected letters.<br>Built in one day. Open sourced immediately.</p>
+      <div class="stat"><em>440 million</em> speakers.<br><em>Zero</em> proper terminals.<br><em>Until now.</em></div>
+    </div>
+    <div class="bottom-left">
+      <span class="url">github.com/Moshe-ship/Tarminal</span>
+      <span class="license">MIT</span>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="terminal">
+      <div class="tbar">
+        <div class="d dr"></div><div class="d dy"></div><div class="d dg"></div>
+        <span class="ttitle">Tarminal &mdash; zsh</span>
+      </div>
+      <div class="tbody">
+        <div><span class="pr">~</span> <span class="cm">echo "</span><span class="ar">مرحبا يا صاحبي</span><span class="cm">"</span></div>
+        <div><span class="ar-out">مرحبا يا صاحبي</span></div>
+        <div><span class="pr">~</span> <span class="cm">ls المشاريع/</span></div>
+        <div><span class="out">aamil/&nbsp;&nbsp;nashir/&nbsp;&nbsp;tarminal/&nbsp;&nbsp;mkhlab/</span></div>
+        <div><span class="pr">~</span> <span class="ar" style="color:#00cc33;font-size:12px">أول طرفية تتكلم عربي</span> <span class="cursor"></span></div>
+      </div>
+    </div>
+
+    <div class="compare">
+      <div class="compare-item compare-bad">
+        <div class="compare-label">Every other terminal</div>
+        <div class="compare-text">م ر ح ب ا&nbsp;&nbsp;ي ا&nbsp;&nbsp;ص ا ح ب ي</div>
+      </div>
+      <div class="compare-item compare-good">
+        <div class="compare-label">Tarminal</div>
+        <div class="compare-text">مرحبا يا صاحبي</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bar"></div>
+</body>
+</html>

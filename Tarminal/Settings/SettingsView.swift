@@ -12,6 +12,7 @@ struct SettingsView: View {
     @AppStorage("cursorBlink") private var cursorBlink: Bool = false
     @AppStorage("scrollbackLines") private var scrollbackLines: Int = 10000
     @AppStorage("optionAsMeta") private var optionAsMeta: Bool = false
+    @AppStorage("useMetalRenderer") private var useMetalRenderer: Bool = true
 
     // Arabic / BiDi
     @AppStorage("bidiMode") private var bidiMode: String = "auto"
@@ -247,6 +248,13 @@ struct SettingsView: View {
                         value: $scrollbackLines, in: 500...100000, step: 500)
 
                 Text("Higher values use more memory. 10,000 is a good default.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Section("Rendering") {
+                Toggle("Metal GPU Rendering", isOn: $useMetalRenderer)
+                Text("Uses Apple Silicon GPU for terminal drawing. Smoother scrolling and lower CPU usage. Disable if you see rendering artifacts.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }

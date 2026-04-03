@@ -13,6 +13,7 @@ struct TerminalContainerView: NSViewRepresentable {
     @AppStorage("bellBounce") private var bellBounce: Bool = false
     @AppStorage("titleBarStyle") private var titleBarStyle: String = "directory"
     @AppStorage("scrollbackLines") private var scrollbackLines: Int = 10000
+    @AppStorage("useMetalRenderer") private var useMetalRenderer: Bool = true
 
     func makeNSView(context: Context) -> NSView {
         let container = TerminalDropView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
@@ -35,6 +36,8 @@ struct TerminalContainerView: NSViewRepresentable {
         // Bell settings
         terminalView.bellSoundEnabled = bellSound
         terminalView.bellBounceEnabled = bellBounce
+        terminalView.arabicFontName = themeManager.currentTheme.arabicFontName
+        terminalView.bidiMode = bidiMode
 
         // Apply theme + settings
         applyTheme(to: terminalView)
@@ -46,6 +49,11 @@ struct TerminalContainerView: NSViewRepresentable {
 
         // Clickable URLs
         terminalView.linkHighlightMode = .hover
+
+        // Metal GPU rendering — Apple Silicon native
+        if useMetalRenderer {
+            terminalView.enableMetal()
+        }
 
         // Process delegate
         terminalView.processDelegate = context.coordinator

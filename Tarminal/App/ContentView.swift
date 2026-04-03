@@ -8,27 +8,31 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Tab bar — always show (like iTerm2)
             TabBarView()
 
-            // Active terminal
-            if let currentTab = tabManager.currentTab {
-                TerminalContainerView(tab: currentTab)
-                    .id(currentTab.id)
-            } else {
-                // Empty state
-                VStack {
-                    Spacer()
-                    Text("ترمنال")
-                        .font(.system(size: 40, weight: .thin))
-                        .foregroundColor(.white.opacity(0.15))
-                    Text("Cmd+T to open a new tab")
-                        .font(.system(size: 13))
-                        .foregroundColor(.white.opacity(0.1))
-                    Spacer()
+            // Keep ALL terminal views alive — show/hide based on active tab.
+            // Using .id() would destroy the NSView + shell process on every switch.
+            ZStack {
+                if tabManager.tabs.isEmpty {
+                    VStack {
+                        Spacer()
+                        Text("ترمنال")
+                            .font(.system(size: 40, weight: .thin))
+                            .foregroundColor(.white.opacity(0.15))
+                        Text("Cmd+T to open a new tab")
+                            .font(.system(size: 13))
+                            .foregroundColor(.white.opacity(0.1))
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black)
+                } else {
+                    ForEach(tabManager.tabs) { tab in
+                        TerminalContainerView(tab: tab)
+                            .opacity(tab.id == tabManager.selectedTabId ? 1 : 0)
+                            .allowsHitTesting(tab.id == tabManager.selectedTabId)
+                    }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.black)
             }
         }
         .background(Color(nsColor: NSColor(white: 0.08, alpha: 1)))
@@ -59,7 +63,7 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Close Tab Handler (passed through environment)
+// MARK: - Close Tab Handler
 
 struct CloseTabHandler {
     let close: (UUID) -> Void

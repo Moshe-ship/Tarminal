@@ -1,25 +1,16 @@
 import SwiftUI
 
-// MARK: - Tab Group
+// MARK: - Session State (persisted to disk)
 
-class TabGroup: Identifiable, ObservableObject {
-    let id = UUID()
-    @Published var name: String
-    @Published var color: Color
+struct SavedTab: Codable {
+    let workingDirectory: String
+    let tabColor: String
+    let title: String
+}
 
-    init(name: String = "Default", color: Color = .clear) {
-        self.name = name
-        self.color = color
-    }
-
-    static let groupColors: [Color] = [
-        .clear, .red, .orange, .yellow, .green, .blue, .purple, .pink
-    ]
-
-    static let colorNames: [Color: String] = [
-        .clear: "None", .red: "Red", .orange: "Orange", .yellow: "Yellow",
-        .green: "Green", .blue: "Blue", .purple: "Purple", .pink: "Pink"
-    ]
+struct SavedSession: Codable {
+    let tabs: [SavedTab]
+    let selectedIndex: Int
 }
 
 // MARK: - Terminal Tab
@@ -30,12 +21,33 @@ class TerminalTab: Identifiable, ObservableObject {
     @Published var workingDirectory: String
     @Published var isActive: Bool = false
     @Published var isTerminated: Bool = false
-    @Published var groupId: UUID?
+    @Published var tabColor: TabColor = .none
 
-    init(title: String = "zsh", groupId: UUID? = nil) {
+    enum TabColor: String, CaseIterable {
+        case none, red, orange, yellow, green, blue, purple, pink
+
+        var color: Color? {
+            switch self {
+            case .none: return nil
+            case .red: return .red
+            case .orange: return .orange
+            case .yellow: return .yellow
+            case .green: return .green
+            case .blue: return .blue
+            case .purple: return .purple
+            case .pink: return .pink
+            }
+        }
+
+        var displayName: String {
+            rawValue == "none" ? "Default" : rawValue.capitalized
+        }
+    }
+
+    init(title: String = "zsh", workingDirectory: String? = nil, tabColor: TabColor = .none) {
         self.title = title
-        self.workingDirectory = NSHomeDirectory()
-        self.groupId = groupId
+        self.workingDirectory = workingDirectory ?? NSHomeDirectory()
+        self.tabColor = tabColor
     }
 
     var displayTitle: String {
@@ -50,7 +62,12 @@ class TerminalTab: Identifiable, ObservableObject {
 class TabManager: ObservableObject {
     @Published var tabs: [TerminalTab] = []
     @Published var selectedTabId: UUID?
-    @Published var groups: [TabGroup] = []
+
+    private static let sessionKey = "com.tarminal.savedSession"
+
+    init() {
+        restoreSession()
+    }
 
     var currentTab: TerminalTab? {
         tabs.first { $0.id == selectedTabId }
@@ -62,13 +79,9 @@ class TabManager: ObservableObject {
 
     // MARK: Tab Operations
 
-    func addTab(groupId: UUID? = nil) {
-        // Inherit working directory from the currently selected tab
+    func addTab() {
         let currentDir = currentTab?.workingDirectory
-        let tab = TerminalTab(groupId: groupId)
-        if let dir = currentDir {
-            tab.workingDirectory = dir
-        }
+        let tab = TerminalTab(workingDirectory: currentDir)
         tabs.append(tab)
         selectedTabId = tab.id
     }
@@ -116,7 +129,6 @@ class TabManager: ObservableObject {
         selectedTabId = tabs[prev].id
     }
 
-    /// Move a tab from one position to another (for drag reorder)
     func moveTab(from sourceIndex: Int, to destinationIndex: Int) {
         guard sourceIndex != destinationIndex,
               sourceIndex >= 0, sourceIndex < tabs.count,
@@ -125,34 +137,41 @@ class TabManager: ObservableObject {
         tabs.insert(tab, at: destinationIndex)
     }
 
-    // MARK: Group Operations
+    // MARK: Session Persistence
 
-    func createGroup(name: String, color: Color) -> TabGroup {
-        let group = TabGroup(name: name, color: color)
-        groups.append(group)
-        return group
-    }
-
-    func deleteGroup(_ id: UUID) {
-        // Unassign tabs from this group
-        for tab in tabs where tab.groupId == id {
-            tab.groupId = nil
+    func saveSession() {
+        let savedTabs = tabs.map { tab in
+            SavedTab(
+                workingDirectory: tab.workingDirectory,
+                tabColor: tab.tabColor.rawValue,
+                title: tab.title
+            )
         }
-        groups.removeAll { $0.id == id }
-    }
-
-    func assignTabToGroup(tabId: UUID, groupId: UUID?) {
-        if let tab = tabs.first(where: { $0.id == tabId }) {
-            tab.groupId = groupId
+        let session = SavedSession(
+            tabs: savedTabs,
+            selectedIndex: selectedIndex ?? 0
+        )
+        if let data = try? JSONEncoder().encode(session) {
+            UserDefaults.standard.set(data, forKey: Self.sessionKey)
         }
     }
 
-    func group(for tab: TerminalTab) -> TabGroup? {
-        guard let gid = tab.groupId else { return nil }
-        return groups.first { $0.id == gid }
-    }
+    private func restoreSession() {
+        guard let data = UserDefaults.standard.data(forKey: Self.sessionKey),
+              let session = try? JSONDecoder().decode(SavedSession.self, from: data),
+              !session.tabs.isEmpty else { return }
 
-    func tabs(in groupId: UUID) -> [TerminalTab] {
-        tabs.filter { $0.groupId == groupId }
+        for saved in session.tabs {
+            let color = TerminalTab.TabColor(rawValue: saved.tabColor) ?? .none
+            let tab = TerminalTab(
+                title: saved.title,
+                workingDirectory: saved.workingDirectory,
+                tabColor: color
+            )
+            tabs.append(tab)
+        }
+
+        let idx = min(session.selectedIndex, tabs.count - 1)
+        selectedTabId = tabs[idx].id
     }
 }

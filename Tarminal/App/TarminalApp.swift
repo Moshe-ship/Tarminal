@@ -3,12 +3,16 @@ import SwiftUI
 @main
 struct TarminalApp: App {
     @StateObject private var tabManager = TabManager()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(tabManager)
                 .frame(minWidth: 600, minHeight: 400)
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+                    tabManager.saveSession()
+                }
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified(showsTitle: false))

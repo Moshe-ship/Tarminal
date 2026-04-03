@@ -166,6 +166,51 @@ class BiDiOverlayView: NSView {
 
             CTLineDraw(ctLine, context)
             context.restoreGState()
+
+            // Draw visual cursor on the current RTL line
+            let buffer = terminal.buffer
+            if row == buffer.y && paragraphDir == .rtl {
+                let logicalX = buffer.x
+                let clampedIndex = min(logicalX, attrString.length)
+                let visualOffset = CTLineGetOffsetForStringIndex(ctLine, clampedIndex, nil)
+
+                let cursorX: CGFloat
+                if paragraphDir == .rtl {
+                    let lineWidth = CGFloat(CTLineGetTypographicBounds(ctLine, nil, nil, nil))
+                    let termWidth = CGFloat(cols) * cellWidth
+                    cursorX = (termWidth - lineWidth) + CGFloat(visualOffset)
+                } else {
+                    cursorX = CGFloat(visualOffset)
+                }
+
+                // Draw cursor block
+                let cursorColor = terminalView.caretColor
+                context.setFillColor(cursorColor.withAlphaComponent(0.7).cgColor)
+                context.fill(CGRect(
+                    x: cursorX,
+                    y: lineOriginY,
+                    width: cellWidth,
+                    height: cellHeight
+                ))
+
+                // Draw the character under cursor with inverted color
+                if clampedIndex < attrString.length {
+                    let charStr = (attrString.string as NSString).substring(with: NSRange(location: clampedIndex, length: 1))
+                    let cursorAttr = NSAttributedString(
+                        string: charStr,
+                        attributes: [
+                            NSAttributedString.Key(kCTFontAttributeName as String): cascadeFont,
+                            .foregroundColor: terminalView.nativeBackgroundColor ?? NSColor.black
+                        ]
+                    )
+                    let cursorLine = CTLineCreateWithAttributedString(cursorAttr)
+                    context.saveGState()
+                    context.textMatrix = .identity
+                    context.textPosition = CGPoint(x: cursorX, y: lineOriginY + yOffset)
+                    CTLineDraw(cursorLine, context)
+                    context.restoreGState()
+                }
+            }
         }
     }
 
