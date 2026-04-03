@@ -81,7 +81,20 @@ struct TerminalContainerView: NSViewRepresentable {
                 workDir = nil
             }
 
-            terminalView.startProcess(executable: shell, args: ["--login"], environment: nil, execName: nil, currentDirectory: workDir)
+            // Build environment with Touch ID SSH support
+            var env = Terminal.getEnvironmentVariables(termName: "xterm-256color")
+
+            // Inherit PATH from parent process (SwiftTerm doesn't by default)
+            if let path = ProcessInfo.processInfo.environment["PATH"] {
+                env.append("PATH=\(path)")
+            }
+
+            // Enable Secure Enclave SSH keys (Touch ID for SSH)
+            if FileManager.default.fileExists(atPath: "/usr/lib/ssh-keychain.dylib") {
+                env.append("SSH_SK_PROVIDER=/usr/lib/ssh-keychain.dylib")
+            }
+
+            terminalView.startProcess(executable: shell, args: ["--login"], environment: env, execName: nil, currentDirectory: workDir)
             terminalView.window?.makeFirstResponder(terminalView)
         }
 

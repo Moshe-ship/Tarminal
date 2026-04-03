@@ -249,20 +249,77 @@ struct SettingsView: View {
                     .foregroundColor(.secondary)
             }
 
+            Section("Touch ID") {
+                // SSH Touch ID status
+                HStack {
+                    Text("SSH (Secure Enclave)")
+                    Spacer()
+                    if FileManager.default.fileExists(atPath: "/usr/lib/ssh-keychain.dylib") {
+                        Text("Active")
+                            .foregroundColor(.green)
+                            .font(.caption)
+                    } else {
+                        Text("Not available")
+                            .foregroundColor(.secondary)
+                            .font(.caption)
+                    }
+                }
+                Text("Tarminal sets SSH_SK_PROVIDER automatically. Generate a Secure Enclave key with: ssh-keygen -t ecdsa-sk")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                // Sudo Touch ID status + setup
+                HStack {
+                    Text("Sudo")
+                    Spacer()
+                    if sudoTouchIDEnabled {
+                        Text("Active")
+                            .foregroundColor(.green)
+                            .font(.caption)
+                    } else {
+                        Button("Enable") {
+                            enableSudoTouchID()
+                        }
+                        .font(.caption)
+                    }
+                }
+                Text("Use Touch ID instead of password for sudo commands.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
             Section("About") {
                 HStack {
                     Text("Tarminal ترمنال")
                         .font(.headline)
                     Spacer()
-                    Text("Phase 3")
+                    Text("v0.3.0")
                         .foregroundColor(.secondary)
                 }
-                Text("The first macOS terminal with native Arabic RTL support.")
+                Text("Native macOS terminal with Arabic support and Metal GPU rendering.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
         }
         .padding()
+    }
+
+    // MARK: - Touch ID
+
+    private var sudoTouchIDEnabled: Bool {
+        guard let content = try? String(contentsOfFile: "/etc/pam.d/sudo_local", encoding: .utf8) else { return false }
+        return content.contains("pam_tid.so")
+    }
+
+    private func enableSudoTouchID() {
+        // Use AppleScript to run the command with admin privileges (shows system auth dialog)
+        let script = """
+        do shell script "echo 'auth       sufficient     pam_tid.so' > /etc/pam.d/sudo_local" with administrator privileges
+        """
+        if let appleScript = NSAppleScript(source: script) {
+            var error: NSDictionary?
+            appleScript.executeAndReturnError(&error)
+        }
     }
 
     // MARK: - Helpers
