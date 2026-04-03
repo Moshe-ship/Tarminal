@@ -2,6 +2,8 @@ import SwiftUI
 
 struct TabBarView: View {
     @EnvironmentObject var tabManager: TabManager
+    @Environment(\.closeTabHandler) private var closeTabHandler
+    @State private var draggedTabId: UUID?
 
     var body: some View {
         HStack(spacing: 0) {
@@ -11,9 +13,22 @@ struct TabBarView: View {
                     index: index + 1,
                     isSelected: tab.id == tabManager.selectedTabId,
                     isOnly: tabManager.tabs.count == 1,
+                    groupColor: tabManager.group(for: tab)?.color ?? .clear,
                     onSelect: { tabManager.selectTab(tab.id) },
-                    onClose: { tabManager.closeTab(tab.id) }
+                    onClose: { closeTabHandler(tab.id) }
                 )
+                .onDrag {
+                    draggedTabId = tab.id
+                    return NSItemProvider(object: tab.id.uuidString as NSString)
+                }
+                .onDrop(of: [.text], delegate: TabDropDelegate(
+                    tabManager: tabManager,
+                    targetTabId: tab.id,
+                    draggedTabId: $draggedTabId
+                ))
+                .contextMenu {
+                    tabContextMenu(for: tab)
+                }
 
                 // Separator between tabs
                 if tab.id != tabManager.tabs.last?.id {
@@ -45,13 +60,91 @@ struct TabBarView: View {
             alignment: .bottom
         )
     }
+
+    // MARK: - Context Menu
+
+    @ViewBuilder
+    private func tabContextMenu(for tab: TerminalTab) -> some View {
+        // Group color submenu
+        Menu("Set Color") {
+            ForEach(TabGroup.groupColors, id: \.self) { color in
+                Button(action: {
+                    setTabColor(tab: tab, color: color)
+                }) {
+                    HStack {
+                        if color == .clear {
+                            Image(systemName: "xmark.circle")
+                            Text("None")
+                        } else {
+                            Image(systemName: "circle.fill")
+                                .foregroundColor(color)
+                            Text(TabGroup.colorNames[color] ?? "Color")
+                        }
+                    }
+                }
+            }
+        }
+
+        // Group assignment submenu
+        if !tabManager.groups.isEmpty {
+            Menu("Move to Group") {
+                Button("No Group") {
+                    tabManager.assignTabToGroup(tabId: tab.id, groupId: nil)
+                }
+                Divider()
+                ForEach(tabManager.groups) { group in
+                    Button(group.name) {
+                        tabManager.assignTabToGroup(tabId: tab.id, groupId: group.id)
+                    }
+                }
+            }
+        }
+
+        Divider()
+
+        Button("New Tab") {
+            tabManager.addTab(groupId: tab.groupId)
+        }
+
+        if tabManager.tabs.count > 1 {
+            Button("Close Tab") {
+                closeTabHandler(tab.id)
+            }
+
+            Button("Close Other Tabs") {
+                let others = tabManager.tabs.filter { $0.id != tab.id }.map(\.id)
+                tabManager.selectTab(tab.id)
+                for id in others {
+                    closeTabHandler(id)
+                }
+            }
+        }
+    }
+
+    private func setTabColor(tab: TerminalTab, color: Color) {
+        if color == .clear {
+            tabManager.assignTabToGroup(tabId: tab.id, groupId: nil)
+        } else {
+            // Find or create a group with this color
+            if let existing = tabManager.groups.first(where: { $0.color == color }) {
+                tabManager.assignTabToGroup(tabId: tab.id, groupId: existing.id)
+            } else {
+                let name = TabGroup.colorNames[color] ?? "Group"
+                let group = tabManager.createGroup(name: name, color: color)
+                tabManager.assignTabToGroup(tabId: tab.id, groupId: group.id)
+            }
+        }
+    }
 }
+
+// MARK: - Tab Item View
 
 struct TabItemView: View {
     @ObservedObject var tab: TerminalTab
     let index: Int
     let isSelected: Bool
     let isOnly: Bool
+    let groupColor: Color
     let onSelect: () -> Void
     let onClose: () -> Void
 
@@ -59,6 +152,13 @@ struct TabItemView: View {
 
     var body: some View {
         HStack(spacing: 6) {
+            // Group color dot
+            if groupColor != .clear {
+                Circle()
+                    .fill(groupColor)
+                    .frame(width: 6, height: 6)
+            }
+
             // Tab number indicator
             Text("\(index)")
                 .font(.system(size: 9, weight: .semibold, design: .monospaced))
@@ -99,13 +199,51 @@ struct TabItemView: View {
                     : Color.clear
         )
         .overlay(
+            // Bottom accent: group color if grouped, green if selected
             Rectangle()
                 .frame(height: 2)
-                .foregroundColor(isSelected ? Color.green.opacity(0.5) : .clear),
+                .foregroundColor(
+                    groupColor != .clear
+                        ? groupColor.opacity(isSelected ? 0.8 : 0.4)
+                        : (isSelected ? Color.green.opacity(0.5) : .clear)
+                ),
             alignment: .bottom
         )
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
         .onHover { isHovering = $0 }
+    }
+}
+
+// MARK: - Drop Delegate (Tab Reorder)
+
+struct TabDropDelegate: DropDelegate {
+    let tabManager: TabManager
+    let targetTabId: UUID
+    @Binding var draggedTabId: UUID?
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggedTabId = nil
+        return true
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard let draggedId = draggedTabId,
+              draggedId != targetTabId,
+              let fromIndex = tabManager.tabs.firstIndex(where: { $0.id == draggedId }),
+              let toIndex = tabManager.tabs.firstIndex(where: { $0.id == targetTabId })
+        else { return }
+
+        withAnimation(.easeInOut(duration: 0.2)) {
+            tabManager.moveTab(from: fromIndex, to: toIndex)
+        }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func validateDrop(info: DropInfo) -> Bool {
+        draggedTabId != nil
     }
 }
