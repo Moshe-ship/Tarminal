@@ -28,6 +28,20 @@ struct TerminalContainerView: NSViewRepresentable {
         container.addSubview(vibrancy)
         context.coordinator.vibrancyView = vibrancy
 
+        // Reuse cached terminal view if available — prevents process kill
+        // when SwiftUI tears down and recreates NSViewRepresentable views.
+        if let cached = TerminalViewStore.shared.terminal(for: tab.id) {
+            cached.removeFromSuperview()
+            cached.frame = container.bounds
+            cached.processDelegate = context.coordinator
+            container.addSubview(cached)
+            context.coordinator.terminalView = cached
+            context.coordinator.tabManager = tabManager
+            context.coordinator.titleBarStyle = titleBarStyle
+            container.coordinator = context.coordinator
+            return container
+        }
+
         let terminalView = TarminalTerminalView(frame: container.bounds)
         terminalView.autoresizingMask = [.width, .height]
 
@@ -47,6 +61,9 @@ struct TerminalContainerView: NSViewRepresentable {
         context.coordinator.terminalView = terminalView
         context.coordinator.tabManager = tabManager
         container.coordinator = context.coordinator
+
+        // Cache the terminal view so it survives SwiftUI view recreation
+        TerminalViewStore.shared.store(terminalView, for: tab.id)
 
         // Enable Metal AFTER view is in hierarchy (SwiftTerm requires window context)
         DispatchQueue.main.async {
@@ -119,7 +136,11 @@ struct TerminalContainerView: NSViewRepresentable {
                 try? tv.setUseMetal(false)
             }
 
-            tv.window?.makeFirstResponder(tv)
+            // Only steal focus for the selected tab — prevents background
+            // tabs from grabbing first responder and displacing the cursor.
+            if tabManager?.selectedTabId == tab.id {
+                tv.window?.makeFirstResponder(tv)
+            }
         }
         if let vibrancy = context.coordinator.vibrancyView {
             vibrancy.isHidden = (opacity >= 1.0)

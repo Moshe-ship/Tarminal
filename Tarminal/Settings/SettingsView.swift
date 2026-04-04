@@ -297,7 +297,7 @@ struct SettingsView: View {
                     Text("Tarminal ترمنال")
                         .font(.headline)
                     Spacer()
-                    Text("v0.3.0")
+                    Text("v0.4.0")
                         .foregroundColor(.secondary)
                 }
                 Text("Native macOS terminal with Metal GPU rendering and Touch ID.")

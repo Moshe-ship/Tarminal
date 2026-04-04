@@ -88,6 +88,7 @@ class TabManager: ObservableObject {
 
     func closeTab(_ id: UUID) {
         guard tabs.count > 1 else { return }
+        TerminalViewStore.shared.remove(tabId: id)
         let wasSelected = selectedTabId == id
         let idx = tabs.firstIndex { $0.id == id }
         tabs.removeAll { $0.id == id }

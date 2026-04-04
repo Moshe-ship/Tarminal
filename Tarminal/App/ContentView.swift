@@ -17,15 +17,15 @@ struct ContentView: View {
                     VStack {
                         Spacer()
                         Text("ترمنال")
-                            .font(.system(size: 40, weight: .thin))
-                            .foregroundColor(.white.opacity(0.15))
+                            .font(.system(size: 40, weight: .ultraLight))
+                            .foregroundColor(.secondary.opacity(0.3))
                         Text("Cmd+T to open a new tab")
-                            .font(.system(size: 13))
-                            .foregroundColor(.white.opacity(0.1))
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary.opacity(0.2))
                         Spacer()
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.black)
+                    .background(Color(nsColor: .windowBackgroundColor))
                 } else {
                     ForEach(tabManager.tabs) { tab in
                         TerminalContainerView(tab: tab, tabManager: tabManager)
@@ -38,7 +38,7 @@ struct ContentView: View {
                 tabManager.tabs.first { $0.id == newId }?.hasActivity = false
             }
         }
-        .background(Color(nsColor: NSColor(white: 0.08, alpha: 1)))
+        .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
             if tabManager.tabs.isEmpty {
                 tabManager.addTab()

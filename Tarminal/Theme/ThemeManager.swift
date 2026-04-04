@@ -7,11 +7,19 @@ class ThemeManager: ObservableObject {
     @Published var availableThemes: [TerminalTheme]
 
     private let storageKey = "com.tarminal.currentTheme"
+    private static let migrationKey = "com.tarminal.themeMigrationV2"
 
     init() {
         let builtIn = Self.builtInThemes()
         self.availableThemes = builtIn
         self.currentTheme = builtIn[0]
+
+        // v0.4: purge old 14pt cached themes so new 13pt default takes effect
+        if !UserDefaults.standard.bool(forKey: Self.migrationKey) {
+            UserDefaults.standard.removeObject(forKey: storageKey)
+            UserDefaults.standard.set(true, forKey: Self.migrationKey)
+        }
+
         loadSavedTheme()
     }
 
@@ -62,7 +70,7 @@ class ThemeManager: ObservableObject {
                     CodableColor(r: 1.0, g: 1.0, b: 1.0),
                 ],
                 fontName: "SFMono-Regular",
-                fontSize: 14
+                fontSize: 13
             ),
             TerminalTheme(
                 id: UUID(),
@@ -90,7 +98,7 @@ class ThemeManager: ObservableObject {
                     CodableColor(r: 0.97, g: 0.97, b: 0.95),
                 ],
                 fontName: "SFMono-Regular",
-                fontSize: 14
+                fontSize: 13
             ),
             TerminalTheme(
                 id: UUID(),
@@ -118,7 +126,7 @@ class ThemeManager: ObservableObject {
                     CodableColor(r: 0.91, g: 0.93, b: 0.94),
                 ],
                 fontName: "SFMono-Regular",
-                fontSize: 14
+                fontSize: 13
             ),
             TerminalTheme(
                 id: UUID(),
@@ -146,7 +154,7 @@ class ThemeManager: ObservableObject {
                     CodableColor(r: 0.95, g: 0.92, b: 0.85),
                 ],
                 fontName: "SFMono-Regular",
-                fontSize: 14
+                fontSize: 13
             ),
         ]
     }

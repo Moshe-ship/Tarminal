@@ -18,7 +18,7 @@ struct TarminalApp: App {
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified(showsTitle: false))
-        .defaultSize(width: 900, height: 600)
+        .defaultSize(width: 1024, height: 660)
         .commands {
             // Tab commands
             CommandGroup(replacing: .newItem) {

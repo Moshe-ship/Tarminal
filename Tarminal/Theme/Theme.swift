@@ -39,7 +39,7 @@ struct TerminalTheme: Identifiable, Codable {
             CodableColor(r: 1.0, g: 1.0, b: 1.0),
         ],
         fontName: "SFMono-Regular",
-        fontSize: 14
+        fontSize: 13
     )
 }
 

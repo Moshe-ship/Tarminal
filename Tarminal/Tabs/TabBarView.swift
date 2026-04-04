@@ -61,31 +61,27 @@ struct TabBarView: View {
                     tabContextMenu(for: tab)
                 }
 
-                if tab.id != tabManager.tabs.last?.id {
-                    Rectangle()
-                        .fill(Color.white.opacity(0.06))
-                        .frame(width: 1, height: 20)
-                }
+                // No dividers — rounded tab shapes provide separation
             }
 
             Spacer()
 
             Button(action: { tabManager.addTab() }) {
                 Image(systemName: "plus")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(Color.white.opacity(0.4))
-                    .frame(width: 32, height: 32)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .frame(width: 24, height: 24)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .padding(.trailing, 8)
+            .padding(.trailing, 6)
         }
-        .frame(height: 36)
-        .background(Color(nsColor: NSColor(white: 0.1, alpha: 1)))
+        .frame(height: 28)
+        .background(.ultraThinMaterial)
         .overlay(
             Rectangle()
-                .frame(height: 1)
-                .foregroundColor(Color.white.opacity(0.05)),
+                .frame(height: 0.5)
+                .foregroundColor(Color(nsColor: .separatorColor)),
             alignment: .bottom
         )
     }
@@ -158,28 +154,22 @@ struct TabItemView: View {
     }
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 5) {
             // Color dot or activity indicator
             if let color = effectiveColor {
                 Circle()
                     .fill(color)
-                    .frame(width: 7, height: 7)
+                    .frame(width: 6, height: 6)
             } else if tab.hasActivity && !isSelected {
                 Circle()
-                    .fill(Color.blue)
+                    .fill(Color.accentColor)
                     .frame(width: 5, height: 5)
             }
 
-            // Tab number
-            Text("\(index)")
-                .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                .foregroundColor(isSelected ? .green.opacity(0.7) : (tab.hasActivity ? .blue.opacity(0.7) : .white.opacity(0.2)))
-                .frame(width: 14)
-
             // Tab title
             Text(tab.displayTitle)
-                .font(.system(size: 11.5, weight: isSelected ? .medium : .regular))
-                .foregroundColor(isSelected ? .white : .white.opacity(0.5))
+                .font(.system(size: 11, weight: isSelected ? .medium : .regular))
+                .foregroundColor(isSelected ? .primary : .secondary)
                 .lineLimit(1)
                 .truncationMode(.middle)
 
@@ -189,26 +179,23 @@ struct TabItemView: View {
             if !isOnly && (isHovering || isSelected) {
                 Button(action: onClose) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(.white.opacity(0.3))
-                        .frame(width: 16, height: 16)
+                        .font(.system(size: 7.5, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .frame(width: 14, height: 14)
                         .background(
-                            isHovering ? Color.white.opacity(0.1) : Color.clear
+                            isHovering ? Color.primary.opacity(0.08) : Color.clear
                         )
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12)
-        .frame(minWidth: 120, maxWidth: 200, maxHeight: .infinity)
+        .padding(.horizontal, 10)
+        .frame(minWidth: 100, maxWidth: 180, maxHeight: .infinity)
         .background(tabBackground)
-        .overlay(
-            Rectangle()
-                .frame(height: 2)
-                .foregroundColor(bottomAccentColor),
-            alignment: .bottom
-        )
+        .clipShape(RoundedRectangle(cornerRadius: 5))
+        .padding(.vertical, 3)
+        .padding(.horizontal, 1)
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
         .onHover { isHovering = $0 }
@@ -219,19 +206,12 @@ struct TabItemView: View {
             return color.opacity(0.12)
         }
         if isSelected {
-            return Color(nsColor: NSColor(white: 0.16, alpha: 1))
+            return Color.primary.opacity(0.1)
         }
         if isHovering {
-            return Color(nsColor: NSColor(white: 0.12, alpha: 1))
+            return Color.primary.opacity(0.05)
         }
         return .clear
-    }
-
-    private var bottomAccentColor: Color {
-        if let color = effectiveColor {
-            return color.opacity(isSelected ? 0.8 : 0.4)
-        }
-        return isSelected ? Color.green.opacity(0.5) : .clear
     }
 }
 
